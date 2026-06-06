@@ -228,6 +228,32 @@ table.eco-tbl tr:hover td.cat-label{background:var(--g3);}
   .tname{font-size:1.5rem;}
   .splash-gestes{grid-template-columns:1fr;}
 }
+
+/* ── ADMIN MODAL ── */
+.admin-modal-overlay{position:fixed;inset:0;background:rgba(10,30,15,.7);z-index:2000;display:none;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px);}
+.admin-modal-overlay.open{display:flex;}
+.admin-modal{background:#fff;border-radius:14px;padding:1.4rem 1.5rem;max-width:720px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);}
+.admin-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;border-bottom:2px solid var(--g3);padding-bottom:.6rem;}
+.admin-modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gd);}
+.admin-close{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;border:1px solid var(--border);background:var(--card2);color:var(--text3);padding:.3rem .8rem;border-radius:5px;cursor:pointer;}
+.admin-close:hover{background:var(--rd);color:#fff;border-color:var(--rd);}
+.admin-rule-item{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem;margin-bottom:.6rem;}
+.admin-rule-row{display:grid;grid-template-columns:1fr auto;gap:.5rem;align-items:start;margin-bottom:.4rem;}
+.admin-rule-title-inp{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:#fff;border:1px solid var(--border2);color:var(--gd);padding:.3rem .5rem;border-radius:5px;width:100%;}
+.admin-rule-body-inp{font-family:'Barlow',sans-serif;font-size:.83rem;background:#fff;border:1px solid var(--border2);color:var(--text);padding:.3rem .5rem;border-radius:5px;width:100%;resize:vertical;min-height:60px;line-height:1.45;}
+.admin-rule-hl-inp{font-family:'Barlow',sans-serif;font-size:.8rem;background:#fff8e6;border:1px solid #d4b040;color:#806000;padding:.25rem .5rem;border-radius:5px;width:100%;resize:vertical;min-height:36px;}
+.admin-rule-hl-grn{background:var(--gll)!important;border-color:var(--g3)!important;color:var(--gd)!important;}
+.admin-del-btn{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid #d04040;background:rgba(208,64,64,.08);color:#d04040;padding:.25rem .6rem;border-radius:4px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.admin-del-btn:hover{background:#d04040;color:#fff;}
+.admin-add-btn{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--g);background:var(--gll);color:var(--gd);padding:.35rem .9rem;border-radius:5px;cursor:pointer;margin-top:.3rem;}
+.admin-add-btn:hover{background:var(--g);color:#fff;}
+.admin-save-btn{font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:none;background:var(--g);color:#fff;padding:.45rem 1.4rem;border-radius:7px;cursor:pointer;box-shadow:0 2px 8px rgba(58,140,74,.25);margin-top:.6rem;}
+.admin-save-btn:hover{background:var(--gd);}
+.admin-hl-type{display:flex;gap:.4rem;margin-bottom:.3rem;}
+.admin-hl-type label{font-size:.75rem;color:var(--text3);display:flex;align-items:center;gap:.25rem;cursor:pointer;}
+/* bouton admin dans nav */
+.btn-admin{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:rgba(212,247,218,.7);padding:.3rem .6rem;border-radius:5px;cursor:pointer;margin-left:.4rem;flex-shrink:0;}
+.btn-admin:hover{background:rgba(255,255,255,.15);color:#d4f7da;}
 </style>
 </head>
 <body>
@@ -271,16 +297,51 @@ table.eco-tbl tr:hover td.cat-label{background:var(--g3);}
     Recyclerie
     <span id="sync-dot" title="Synchronisation Firebase" style="width:8px;height:8px;border-radius:50%;background:#f0c060;display:inline-block;margin-left:.2rem;flex-shrink:0;"></span>
   </div>
-  <button onclick="showView('match')">🏀 Match</button>
   <button onclick="showView('planning')">📋 Planning</button>
-  <button onclick="showView('classement')">🏆 Basket</button>
-  <button onclick="showView('athle')">🏃 Athlé</button>
   <button onclick="showView('ecolo')">🌿 Écolo</button>
+  <button onclick="showView('classement')">🏆 Basket</button>
+  <button onclick="showView('match')">🏀 Match</button>
+  <button onclick="showView('athle')">🏃 Athlé</button>
   <button onclick="showView('final')">🥇 Final</button>
   <button onclick="showView('regles-basket')">📖 Règles basket</button>
   <button onclick="showView('equipes')">👥 Équipes</button>
   <button onclick="showView('config')">⚙️ Config</button>
+  <button class="btn-admin" onclick="openAdmin()">🛠 Admin</button>
 </nav>
+
+<!-- ══════════ ADMIN MODAL ══════════ -->
+<div class="admin-modal-overlay" id="admin-modal">
+  <div class="admin-modal">
+    <div class="admin-modal-hdr">
+      <div class="admin-modal-title">🛠 Éditeur de règles</div>
+      <button class="admin-close" onclick="closeAdmin()">✕ Fermer</button>
+    </div>
+
+    <!-- Tabs règles -->
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem;">
+      <button class="gbtn act" id="admin-tab-basket" onclick="switchAdminTab('basket')">📖 Règles basket</button>
+      <button class="gbtn" id="admin-tab-eco" onclick="switchAdminTab('eco')">🌿 Gestes écolo</button>
+    </div>
+
+    <!-- Basket rules editor -->
+    <div id="admin-basket">
+      <p style="font-size:.8rem;color:var(--text3);margin-bottom:.8rem;">Modifie le titre, le contenu et la mise en évidence de chaque règle. Tu peux en ajouter ou en supprimer.</p>
+      <div id="admin-rules-list"></div>
+      <button class="admin-add-btn" onclick="addRule()">+ Ajouter une règle</button>
+      <br>
+      <button class="admin-save-btn" onclick="saveRules()">💾 Enregistrer les règles</button>
+    </div>
+
+    <!-- Eco gestes editor -->
+    <div id="admin-eco" style="display:none;">
+      <p style="font-size:.8rem;color:var(--text3);margin-bottom:.8rem;">Modifie les gestes écolo. Chaque ligne = 1 point bonus. Tu peux en ajouter ou en supprimer.</p>
+      <div id="admin-gestes-list"></div>
+      <button class="admin-add-btn" onclick="addGeste()">+ Ajouter un geste</button>
+      <br>
+      <button class="admin-save-btn" onclick="saveGestes()">💾 Enregistrer les gestes</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════ MATCH ══════════ -->
 <div id="view-match" class="view">
@@ -381,16 +442,9 @@ table.eco-tbl tr:hover td.cat-label{background:var(--g3);}
   <div class="sec-title">📖 Règles basket 4×4</div>
   <div style="background:linear-gradient(135deg,var(--gll),var(--card2));border:1px solid var(--g3);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.2rem;display:flex;gap:.9rem;align-items:flex-start;">
     <div style="font-size:2rem;flex-shrink:0;">🏀</div>
-    <div style="font-size:.88rem;color:var(--text2);line-height:1.5;"><strong style="color:var(--gd);">Format :</strong> 4 contre 4 · Demi-terrain · 2 matchs simultanés · 2 équipes arbitrent par rotation.<br><strong style="color:var(--gd);">Fin de match :</strong> première équipe à <strong>15 points</strong>, ou fin du temps imparti (<strong>10 min</strong>).</div>
+    <div style="font-size:.88rem;color:var(--text2);line-height:1.5;" id="rules-intro-display"></div>
   </div>
-  <div class="rules-grid">
-    <div class="rcard"><div class="rcard-title">🔄 Check Ball — règle clé</div><p>Après chaque panier marqué ou faute sifflée, le jeu reprend obligatoirement par un <strong>check ball</strong>.</p><p>Le défenseur passe le ballon à l'attaquant derrière l'arc. L'attaquant le rend. Le jeu repart.</p><div class="rhl">Sans check ball = le panier ne compte pas et le jeu ne repart pas !</div></div>
-    <div class="rcard"><div class="rcard-title">🔁 Règle de l'arc — ESSENTIELLE</div><p>Après un panier encaissé <strong>ou</strong> une récupération défensive (interception, rebond), l'équipe qui repart en attaque doit <strong>obligatoirement sortir le ballon derrière l'arc des 3 points</strong> avant d'attaquer.</p><div class="rhl">Si tu récupères en défense → tu dois repasser derrière la ligne des 3 pts avant d'attaquer. Sinon : perte de balle !</div></div>
-    <div class="rcard"><div class="rcard-title">🎯 Valeur des paniers</div><p><strong style="font-size:1rem;">1 point</strong> — tout tir rentré depuis l'intérieur de l'arc de cercle.</p><p><strong style="font-size:1rem;">2 points</strong> — tir rentré depuis derrière l'arc (ligne des 3 pts classique).</p><div class="rhl grn">Objectif : atteindre 15 points en premier pour gagner !</div></div>
-    <div class="rcard"><div class="rcard-title">⚠️ Fautes</div><p><strong>Faute personnelle :</strong> remise en jeu par l'équipe adverse avec check ball à l'arc.</p><p><strong>Faute flagrante :</strong> 2 lancers francs (1 pt chacun) + possession du ballon.</p><p>Pas de 5e faute éliminatoire sur ce format.</p></div>
-    <div class="rcard"><div class="rcard-title">🏃 Violations courantes</div><p><strong>Marcher (pivot) :</strong> perte de balle, remise adverse.</p><p><strong>Double dribble :</strong> perte de balle, remise adverse.</p><p><strong>Sortie en touche :</strong> remise adverse à l'endroit de la sortie.</p></div>
-    <div class="rcard"><div class="rcard-title">⏱️ Chrono & arbitrage</div><p>Le chrono <strong>ne s'arrête pas</strong> (temps continu). La table de marque du gymnase fait référence pour le temps et le buzzer.</p><p>2 équipes assurent l'arbitrage pendant que les 4 autres jouent. Rotation à chaque round.</p><div class="rhl grn">Si 15 pts sont atteints avant la fin du temps → match terminé immédiatement !</div></div>
-  </div>
+  <div class="rules-grid" id="rules-grid-display"></div>
 </div>
 
 <!-- ══════════ ÉQUIPES ══════════ -->
@@ -470,32 +524,34 @@ const GESTES=[
   {id:'g15',cat:'🌱 Engagement',ico:'💬',txt:'Chaque membre cite un geste écolo concret pour l\'avenir'},
 ];
 
-let teams=JSON.parse(localStorage.getItem('rcy_teams')||'null')||DEF_TEAMS.map(t=>({...t}));
-let eleves=JSON.parse(localStorage.getItem('rcy_eleves')||'null')||DEFAULT_ELEVES.map(e=>({...e}));
-let ecoChecks=JSON.parse(localStorage.getItem('rcy_eco')||'null')||Array.from({length:12},()=>({}));
-let athleData=Array.from({length:12},(_,i)=>({relay:'',jumps:elevesByTeam(i).map(e=>({id:e.id,prenom:e.prenom,dist:''}))}));
-try{const s=localStorage.getItem('rcy_athle');if(s)athleData=JSON.parse(s);}catch(e){}
-let standings=[
+// Données — localStorage comme cache, Firebase comme source de vérité
+let teams      = JSON.parse(localStorage.getItem('rcy_teams')   ||'null') || DEF_TEAMS.map(t=>({...t}));
+let eleves     = JSON.parse(localStorage.getItem('rcy_eleves')  ||'null') || DEFAULT_ELEVES.map(e=>({...e}));
+let ecoChecks  = JSON.parse(localStorage.getItem('rcy_eco')     ||'null') || Array.from({length:12},()=>({}));
+let athleData  = JSON.parse(localStorage.getItem('rcy_athle')   ||'null') || Array.from({length:12},(_,i)=>({relay:'',jumps:elevesByTeam(i).map(e=>({id:e.id,prenom:e.prenom,dist:''}))}));
+let standings  = JSON.parse(localStorage.getItem('rcy_standings')||'null') || [
   [0,1,2,3,4,5].map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
   [6,7,8,9,10,11].map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
 ];
-try{const s=localStorage.getItem('rcy_standings');if(s)standings=JSON.parse(s);}catch(e){}
 
 function save(){
-  localStorage.setItem('rcy_teams',JSON.stringify(teams));
-  localStorage.setItem('rcy_eleves',JSON.stringify(eleves));
-  localStorage.setItem('rcy_eco',JSON.stringify(ecoChecks));
-  localStorage.setItem('rcy_athle',JSON.stringify(athleData));
+  // Cache local (hors-ligne)
+  localStorage.setItem('rcy_teams',    JSON.stringify(teams));
+  localStorage.setItem('rcy_eleves',   JSON.stringify(eleves));
+  localStorage.setItem('rcy_eco',      JSON.stringify(ecoChecks));
+  localStorage.setItem('rcy_athle',    JSON.stringify(athleData));
   localStorage.setItem('rcy_standings',JSON.stringify(standings));
-  // Firebase sync
+  // Firebase — source de vérité unique
   if(window._fbSet){
-    window._fbSet('standings', standings);
-    window._fbSet('eco', ecoChecks);
-    window._fbSet('athle', athleData);
-    window._fbSet('teams', teams);
-    window._fbSet('eleves', eleves);
+    setSyncDot('load');
+    window._fbSet('teams',    teams);
+    window._fbSet('eleves',   eleves);
+    window._fbSet('eco',      ecoChecks);
+    window._fbSet('athle',    athleData);
+    window._fbSet('standings',standings);
     setSyncDot('ok');
   }
+}
 }
 function setSyncDot(state){
   const d=document.getElementById('sync-dot');
@@ -737,7 +793,7 @@ function applyConfig(){
 }
 
 // ══ NAV ══
-const VIEW_MAP={match:0,planning:1,classement:2,athle:3,ecolo:4,final:5,'regles-basket':6,equipes:7,config:8};
+const VIEW_MAP={planning:0,ecolo:1,classement:2,match:3,athle:4,final:5,'regles-basket':6,equipes:7,config:8};
 function showView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
@@ -750,24 +806,241 @@ function showView(v){
   if(v==='final')calcFinal();
   if(v==='equipes')buildEquipesPage();
   if(v==='config')buildConfigGrid();
+  if(v==='regles-basket')renderRulesView();
+}
+
+// ══════════════════════════════════════════════
+// DONNÉES RÈGLES BASKET (éditables)
+// ══════════════════════════════════════════════
+const DEFAULT_RULES = {
+  intro: "Format : 4 contre 4 · Demi-terrain · 2 matchs simultanés · 2 équipes arbitrent par rotation. Fin de match : première équipe à 15 points, ou fin du temps imparti (10 min).",
+  cards: [
+    {
+      title: "🔄 Check Ball — règle clé",
+      body: "Après chaque panier marqué ou faute sifflée, le jeu reprend obligatoirement par un check ball.\nLe défenseur passe le ballon à l'attaquant derrière l'arc. L'attaquant le rend. Le jeu repart.",
+      hl: "Sans check ball = le panier ne compte pas et le jeu ne repart pas !",
+      hlType: "orange"
+    },
+    {
+      title: "🔁 Règle de l'arc — ESSENTIELLE",
+      body: "Après un panier encaissé ou une récupération défensive (interception, rebond), l'équipe qui repart en attaque doit obligatoirement sortir le ballon derrière la ligne des 3 points avant d'attaquer.",
+      hl: "Si tu récupères en défense → tu dois repasser derrière la ligne des 3 pts avant d'attaquer. Sinon : perte de balle !",
+      hlType: "orange"
+    },
+    {
+      title: "🎯 Valeur des paniers",
+      body: "1 point — tout tir rentré depuis l'intérieur de l'arc de cercle.\n2 points — tir rentré depuis derrière l'arc (ligne des 3 pts).",
+      hl: "Objectif : atteindre 15 points en premier pour gagner !",
+      hlType: "green"
+    },
+    {
+      title: "⚠️ Fautes",
+      body: "Faute personnelle : remise en jeu par l'équipe adverse avec check ball à l'arc.\nFaute flagrante : 2 lancers francs (1 pt chacun) + possession du ballon.\nPas de 5e faute éliminatoire sur ce format.",
+      hl: "",
+      hlType: "orange"
+    },
+    {
+      title: "🏃 Violations courantes",
+      body: "Marcher (pivot) : perte de balle, remise adverse.\nDouble dribble : perte de balle, remise adverse.\nSortie en touche : remise adverse à l'endroit de la sortie.",
+      hl: "",
+      hlType: "orange"
+    },
+    {
+      title: "⏱️ Chrono & arbitrage",
+      body: "Le chrono ne s'arrête pas (temps continu). La table de marque du gymnase fait référence pour le temps et le buzzer.\n2 équipes assurent l'arbitrage pendant que les 4 autres jouent. Rotation à chaque round.",
+      hl: "Si 15 pts sont atteints avant la fin du temps → match terminé immédiatement !",
+      hlType: "green"
+    }
+  ]
+};
+
+let rulesData = JSON.parse(localStorage.getItem('rcy_rules')||'null') || JSON.parse(JSON.stringify(DEFAULT_RULES));
+let gestesData = JSON.parse(localStorage.getItem('rcy_gestes')||'null') || GESTES.map(g=>({...g}));
+
+// ── Affichage des règles ──
+function renderRulesView(){
+  // Intro
+  const intro = document.getElementById('rules-intro-display');
+  if(intro) intro.innerHTML = rulesData.intro.replace(/\n/g,'<br>');
+  // Cards
+  const grid = document.getElementById('rules-grid-display');
+  if(!grid) return;
+  grid.innerHTML = rulesData.cards.map(c=>{
+    const bodyHtml = c.body.split('\n').map(l=>`<p>${l}</p>`).join('');
+    const hlHtml = c.hl ? `<div class="rhl ${c.hlType==='green'?'grn':''}">${c.hl}</div>` : '';
+    return `<div class="rcard"><div class="rcard-title">${c.title}</div>${bodyHtml}${hlHtml}</div>`;
+  }).join('');
+}
+
+// ── ADMIN MODAL ──
+let adminTab = 'basket';
+
+function openAdmin(){
+  document.getElementById('admin-modal').classList.add('open');
+  switchAdminTab('basket');
+}
+function closeAdmin(){ document.getElementById('admin-modal').classList.remove('open'); }
+
+// Fermer en cliquant l'overlay
+document.getElementById('admin-modal').addEventListener('click', function(e){
+  if(e.target === this) closeAdmin();
+});
+
+function switchAdminTab(tab){
+  adminTab = tab;
+  document.getElementById('admin-basket').style.display = tab==='basket' ? 'block':'none';
+  document.getElementById('admin-eco').style.display    = tab==='eco'    ? 'block':'none';
+  document.getElementById('admin-tab-basket').classList.toggle('act', tab==='basket');
+  document.getElementById('admin-tab-eco').classList.toggle('act', tab==='eco');
+  if(tab==='basket') renderAdminRules();
+  if(tab==='eco')    renderAdminGestes();
+}
+
+// ── Éditeur règles basket ──
+function renderAdminRules(){
+  const list = document.getElementById('admin-rules-list');
+  // Intro
+  list.innerHTML = `
+    <div class="admin-rule-item" style="margin-bottom:.8rem;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.4rem;">Texte d'introduction</div>
+      <textarea class="admin-rule-body-inp" id="admin-intro" style="min-height:48px;">${rulesData.intro}</textarea>
+    </div>
+    ${rulesData.cards.map((c,i)=>`
+    <div class="admin-rule-item" id="admin-card-${i}">
+      <div class="admin-rule-row">
+        <input class="admin-rule-title-inp" id="admin-rtitle-${i}" value="${escHtml(c.title)}" placeholder="Titre de la règle (avec emoji)">
+        <button class="admin-del-btn" onclick="deleteRule(${i})">🗑 Supprimer</button>
+      </div>
+      <textarea class="admin-rule-body-inp" id="admin-rbody-${i}" placeholder="Contenu (une ligne = un paragraphe)">${escHtml(c.body)}</textarea>
+      <div style="margin-top:.4rem;">
+        <div style="font-size:.72rem;color:var(--text3);margin-bottom:.2rem;">Encadré mis en avant (optionnel) :</div>
+        <div class="admin-hl-type">
+          <label><input type="radio" name="hltype-${i}" value="orange" ${c.hlType!=='green'?'checked':''}> 🟡 Orange</label>
+          <label><input type="radio" name="hltype-${i}" value="green" ${c.hlType==='green'?'checked':''}> 🟢 Vert</label>
+        </div>
+        <textarea class="admin-rule-hl-inp ${c.hlType==='green'?'admin-rule-hl-grn':''}" id="admin-rhl-${i}" placeholder="Laisser vide pour ne pas afficher">${escHtml(c.hl)}</textarea>
+      </div>
+    </div>`).join('')}`;
+}
+
+function escHtml(str){ return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function addRule(){
+  rulesData.cards.push({title:'🆕 Nouvelle règle', body:'Décris la règle ici.', hl:'', hlType:'orange'});
+  renderAdminRules();
+}
+function deleteRule(i){
+  if(!confirm('Supprimer cette règle ?')) return;
+  rulesData.cards.splice(i,1);
+  renderAdminRules();
+}
+function saveRules(){
+  rulesData.intro = document.getElementById('admin-intro').value;
+  rulesData.cards = rulesData.cards.map((_,i)=>({
+    title: document.getElementById('admin-rtitle-'+i).value,
+    body:  document.getElementById('admin-rbody-'+i).value,
+    hl:    document.getElementById('admin-rhl-'+i).value,
+    hlType: document.querySelector(`input[name="hltype-${i}"]:checked`)?.value || 'orange'
+  }));
+  localStorage.setItem('rcy_rules', JSON.stringify(rulesData));
+  if(window._fbSet){ window._fbSet('rules', rulesData); setSyncDot('ok'); }
+  renderRulesView();
+  // Flash confirmation
+  const btn = document.querySelector('#admin-basket .admin-save-btn');
+  const orig = btn.textContent; btn.textContent='✓ Enregistré sur Firebase !'; btn.style.background='var(--gd)';
+  setTimeout(()=>{btn.textContent=orig;btn.style.background='';}, 2000);
+}
+
+// ── Éditeur gestes écolo ──
+function renderAdminGestes(){
+  // Group by cat for display, but edit flat list
+  const list = document.getElementById('admin-gestes-list');
+  list.innerHTML = gestesData.map((g,i)=>`
+    <div class="admin-rule-item" style="padding:.5rem .8rem;">
+      <div style="display:grid;grid-template-columns:50px 1fr 1fr auto;gap:.4rem;align-items:center;">
+        <input value="${escHtml(g.ico)}" id="admin-gico-${i}" placeholder="ico" style="background:#fff;border:1px solid var(--border2);color:var(--text);padding:.2rem .3rem;border-radius:4px;font-size:1rem;text-align:center;width:100%;">
+        <input value="${escHtml(g.cat)}" id="admin-gcat-${i}" placeholder="Catégorie" style="background:#fff;border:1px solid var(--border2);color:var(--text);padding:.2rem .4rem;border-radius:4px;font-size:.78rem;width:100%;">
+        <input value="${escHtml(g.txt)}" id="admin-gtxt-${i}" placeholder="Description du geste" style="background:#fff;border:1px solid var(--border2);color:var(--text);padding:.2rem .4rem;border-radius:4px;font-size:.82rem;width:100%;">
+        <button class="admin-del-btn" style="padding:.2rem .5rem;" onclick="deleteGeste(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function addGeste(){
+  gestesData.push({id:'g'+(Date.now()),cat:'🌱 Engagement',ico:'🌿',txt:'Nouveau geste écolo'});
+  renderAdminGestes();
+}
+function deleteGeste(i){
+  if(!confirm('Supprimer ce geste ?')) return;
+  gestesData.splice(i,1);
+  renderAdminGestes();
+}
+function saveGestes(){
+  gestesData = gestesData.map((_,i)=>({
+    id: gestesData[i].id,
+    ico: document.getElementById('admin-gico-'+i).value,
+    cat: document.getElementById('admin-gcat-'+i).value,
+    txt: document.getElementById('admin-gtxt-'+i).value,
+  }));
+  // Sync global GESTES array (used by eco table & splash)
+  GESTES.length = 0;
+  gestesData.forEach(g=>GESTES.push(g));
+  localStorage.setItem('rcy_gestes', JSON.stringify(gestesData));
+  if(window._fbSet){ window._fbSet('gestes', gestesData); setSyncDot('ok'); }
+  buildEcoTable();
+  buildSplash();
+  // Flash
+  const btn = document.querySelector('#admin-eco .admin-save-btn');
+  const orig = btn.textContent; btn.textContent='✓ Enregistré sur Firebase !'; btn.style.background='var(--gd)';
+  setTimeout(()=>{btn.textContent=orig;btn.style.background='';}, 2000);
 }
 
 // ══ INIT ══
 function initFirebase(){
   if(!window._fbOn) return;
-  window._fbOn('standings', v=>{standings=v;renderClassement();});
-  window._fbOn('eco',       v=>{ecoChecks=v;const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable();});
-  window._fbOn('athle',     v=>{athleData=v;});
-  window._fbOn('teams',     v=>{teams=v;loadRound(currentRound);});
-  window._fbOn('eleves',    v=>{eleves=v;});
+  setSyncDot('load');
+  // Toutes les données pilotées par Firebase en temps réel
+  window._fbOn('teams',    v=>{ teams=v;     localStorage.setItem('rcy_teams',   JSON.stringify(v)); loadRound(currentRound); });
+  window._fbOn('eleves',   v=>{ eleves=v;    localStorage.setItem('rcy_eleves',  JSON.stringify(v)); });
+  window._fbOn('standings',v=>{ standings=v; localStorage.setItem('rcy_standings',JSON.stringify(v)); renderClassement(); });
+  window._fbOn('eco',      v=>{ ecoChecks=v; localStorage.setItem('rcy_eco',     JSON.stringify(v)); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
+  window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); });
+  window._fbOn('rules',    v=>{ rulesData=v; localStorage.setItem('rcy_rules',   JSON.stringify(v)); renderRulesView(); });
+  window._fbOn('gestes',   v=>{ gestesData=v; GESTES.length=0; v.forEach(g=>GESTES.push(g)); localStorage.setItem('rcy_gestes',JSON.stringify(v)); buildSplash(); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
+  setSyncDot('ok');
+});
+  window._fbOn('eleves',    v=>{eleves=v;   localStorage.setItem('rcy_eleves',JSON.stringify(v));   buildEquipesPage();});
+  window._fbOn('standings', v=>{standings=v;localStorage.setItem('rcy_standings',JSON.stringify(v));renderClassement();});
+  window._fbOn('eco',       v=>{ecoChecks=v;localStorage.setItem('rcy_eco',JSON.stringify(v));      const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable();});
+  window._fbOn('athle',     v=>{athleData=v;localStorage.setItem('rcy_athle',JSON.stringify(v));});
+  window._fbOn('rules',     v=>{
+    rulesData=v;
+    localStorage.setItem('rcy_rules',JSON.stringify(v));
+    renderRulesView();
+  });
+  window._fbOn('gestes',    v=>{
+    gestesData=v;
+    GESTES.length=0; v.forEach(g=>GESTES.push(g));
+    localStorage.setItem('rcy_gestes',JSON.stringify(v));
+    buildSplash();
+    const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable();
+  });
   setSyncDot('ok');
 }
 window.addEventListener('fb-ready', ()=>{ setTimeout(initFirebase, 300); });
 
 function init(){
+  // Normalise standings depuis cache
   [0,1].forEach(g=>{const grpIdx=g===0?GROUP_A:GROUP_B;standings[g]=grpIdx.map(i=>(standings[g]||[]).find(s=>s.idx===i)||{idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});});
+  // Charge gestes & règles depuis cache localStorage (Firebase met à jour via listeners)
+  const sg=localStorage.getItem('rcy_gestes');
+  if(sg){try{const g=JSON.parse(sg);GESTES.length=0;g.forEach(x=>GESTES.push(x));gestesData=GESTES.map(g=>({...g}));}catch(e){}}
+  const sr=localStorage.getItem('rcy_rules');
+  if(sr){try{rulesData=JSON.parse(sr);}catch(e){}}
   buildSplash();
-  loadRound(0);updateChronoDisplay();
+  loadRound(0);
+  updateChronoDisplay();
+  renderRulesView();
+  // Firebase prend le relais dès connexion — toutes les données sont synchronisées automatiquement
 }
 init();
 </script>
