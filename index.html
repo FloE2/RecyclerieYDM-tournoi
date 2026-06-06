@@ -3,177 +3,287 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tournoi Recyclerie — Florian & Emeric</title>
+<title>♻️ Tournoi Recyclerie — Florian & Emeric</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- ══ FIREBASE ══ -->
+<script type="module">
+import { initializeApp }                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyA4MgeX9WrUDJQIv_z7ZL6wVU2Fd0k1er8",
+  authDomain:        "recyclerie-ydm-tournoi.firebaseapp.com",
+  databaseURL:       "https://recyclerie-ydm-tournoi-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "recyclerie-ydm-tournoi",
+  storageBucket:     "recyclerie-ydm-tournoi.firebasestorage.app",
+  messagingSenderId: "882408224009",
+  appId:             "1:882408224009:web:db43994729c21d9a320fd8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+window._fbSet = (path, data) => set(ref(db, path), data).catch(e => console.warn('FB write err', e));
+window._fbOn  = (path, cb)   => onValue(ref(db, path), snap => { const v = snap.val(); if (v !== null) cb(v); });
+window._fbReady = true;
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Barlow',sans-serif;background:#111;color:#fff;min-height:100vh;}
-:root{--g:#2d7a3a;--gl:#4aad5a;--gd:#1a4f24;--am:#e07b00;--al:#ffa930;--bl:#1a5fa8;--bll:#6ab0f5;--rd:#c0392b;--rl:#e74c3c;}
-nav{display:flex;align-items:center;background:#1a1a1a;border-bottom:2px solid var(--g);padding:0 .5rem;gap:0;flex-wrap:wrap;}
-.nav-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;color:var(--gl);padding:.7rem .8rem .7rem 0;border-right:1px solid #333;margin-right:.3rem;letter-spacing:.05em;text-transform:uppercase;flex-shrink:0;}
-nav button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;background:none;border:none;color:#777;padding:.8rem .7rem;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;white-space:nowrap;}
-nav button:hover{color:#fff;}
-nav button.active{color:var(--gl);border-bottom-color:var(--gl);}
-.eco-badge{background:rgba(45,122,58,.15);color:var(--gl);font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border-radius:3px;border:1px solid rgba(45,122,58,.3);margin-left:auto;flex-shrink:0;}
-.view{display:none;padding:1.2rem;}
+:root{
+  --g:#3a8c4a;--gl:#4db860;--gd:#1e5c2a;--gll:#eaf7ec;--g2:#6abf75;--g3:#b4debb;--g4:#d9f0dc;
+  --pastel:#c8eecf;--pastel2:#e0f5e3;--pastel3:#f2fbf3;
+  --am:#d4890a;--al:#f0a020;--amb:#fff8e6;
+  --bl:#1a6fa8;--rd:#b83030;
+  --card:#ffffff;--card2:#f4fbf5;
+  --border:#c0dfc5;--border2:#9acca2;
+  --text:#1a3020;--text2:#3a5c40;--text3:#6a9070;
+  --nav-bg:#2e6b3a;
+}
+body{font-family:'Barlow',sans-serif;background:var(--pastel3);color:var(--text);min-height:100vh;}
+
+/* ─── fond déco ─── */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse at 10% 15%, rgba(106,191,117,.18) 0%, transparent 45%),
+    radial-gradient(ellipse at 90% 85%, rgba(180,222,187,.20) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(200,238,207,.10) 0%, transparent 60%);}
+
+/* ─── NAV ─── */
+nav{display:flex;align-items:center;background:var(--nav-bg);border-bottom:3px solid var(--gl);padding:0 .5rem;flex-wrap:wrap;box-shadow:0 3px 12px rgba(30,92,42,.25);position:relative;z-index:10;}
+.nav-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1rem;color:#d4f7da;padding:.65rem .8rem .65rem 0;border-right:1px solid rgba(255,255,255,.18);margin-right:.3rem;letter-spacing:.05em;text-transform:uppercase;flex-shrink:0;display:flex;align-items:center;gap:.4rem;}
+nav button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;background:none;border:none;color:rgba(212,247,218,.65);padding:.75rem .65rem;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px;transition:color .15s,border-color .15s;white-space:nowrap;}
+nav button:hover{color:#d4f7da;}
+nav button.active{color:#d4f7da;border-bottom-color:#a0e8a8;}
+
+/* ─── VUES ─── */
+.view{display:none;padding:1.3rem;position:relative;z-index:1;}
 .view.active{display:block;}
 #view-match{padding:0;}
 
-/* MATCH */
-.mhdr{display:flex;align-items:center;justify-content:space-between;background:#1a1a1a;border-bottom:1px solid #333;padding:.5rem 1rem;flex-wrap:wrap;gap:.4rem;}
-.mhdr-title{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gl);}
+/* ─── COMPOSANTS COMMUNS ─── */
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gd);margin-bottom:1rem;border-bottom:2px solid var(--g3);padding-bottom:.4rem;display:flex;align-items:center;gap:.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;box-shadow:0 2px 8px rgba(58,140,74,.07);}
+.info-bar{background:var(--gll);border:1px solid var(--g3);border-radius:8px;padding:.6rem .9rem;margin-bottom:1rem;font-size:.83rem;color:var(--text2);}
+.info-bar strong{color:var(--gd);}
+.btn-main{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:none;background:var(--g);color:#fff;padding:.45rem 1.2rem;border-radius:7px;cursor:pointer;box-shadow:0 2px 8px rgba(58,140,74,.25);}
+.btn-main:hover{background:var(--gd);}
+.gbtn{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:.3rem .9rem;border-radius:5px;cursor:pointer;border:1px solid var(--border2);background:var(--card);color:var(--text3);}
+.gbtn.act{border-color:var(--g);background:var(--g);color:#fff;}
+
+/* ─── MATCH (fond pastel vert doux + conserve lisibilité) ─── */
+#view-match{background:linear-gradient(160deg,#1a3a22 0%,#0f2416 100%);color:#fff;position:relative;z-index:1;}
+.mhdr{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.25);border-bottom:1px solid rgba(100,200,100,.2);padding:.5rem 1rem;flex-wrap:wrap;gap:.4rem;}
+.mhdr-title{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a8e890;}
 .mhdr-ctrl{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;}
-.mhdr-ctrl button,.mhdr-ctrl select{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid #444;background:#222;color:#ccc;padding:.25rem .6rem;border-radius:4px;cursor:pointer;}
-.mhdr-ctrl button:hover{background:#333;color:#fff;}
-.btn-g{border-color:var(--g)!important;color:var(--gl)!important;}
-.btn-r{border-color:var(--rd)!important;color:var(--rl)!important;}
-.btn-a{border-color:var(--am)!important;color:var(--al)!important;}
-.courts{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 120px);}
-.court{padding:1.2rem .8rem .8rem;border-right:2px solid #2a2a2a;display:flex;flex-direction:column;}
+.mhdr-ctrl button,.mhdr-ctrl select{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid rgba(100,200,100,.3);background:rgba(30,70,30,.6);color:#b8e8a0;padding:.25rem .6rem;border-radius:4px;cursor:pointer;}
+.mhdr-ctrl button:hover{background:rgba(50,120,50,.6);}
+.btn-g{border-color:#5aab4a!important;color:#90e070!important;background:rgba(30,80,30,.6)!important;}
+.btn-r{border-color:#a05050!important;color:#f08080!important;background:rgba(70,20,20,.6)!important;}
+.btn-a{border-color:#a07020!important;color:#f0c060!important;background:rgba(60,40,0,.6)!important;}
+.courts{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 115px);}
+.court{padding:1.2rem .8rem .8rem;border-right:1px solid rgba(100,180,100,.15);display:flex;flex-direction:column;}
 .court:last-child{border-right:none;}
-.court-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;gap:.3rem;flex-wrap:wrap;}
-.mnum{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;}
-.mstatus{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .6rem;border-radius:3px;display:inline-block;}
-.mstatus.ec{color:var(--gl);background:rgba(45,122,58,.15);}
-.mstatus.fi{color:var(--rl);background:rgba(192,57,43,.15);}
-.mstatus.pa{color:var(--al);background:rgba(224,123,0,.15);}
+.court-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;gap:.3rem;flex-wrap:wrap;}
+.mnum{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(160,230,160,.5);}
+.mstatus{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .6rem;border-radius:3px;}
+.mstatus.ec{color:#80e060;background:rgba(80,200,60,.12);}
+.mstatus.fi{color:#e08080;background:rgba(200,60,60,.12);}
+.mstatus.pa{color:#f0c060;background:rgba(200,150,0,.12);}
 .tbadge{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 5px;border-radius:3px;}
-.t1b{background:rgba(45,122,58,.2);color:var(--gl);}
-.t2b{background:rgba(26,95,168,.2);color:var(--bll);}
-.team-row{display:grid;grid-template-columns:16px 1fr auto;align-items:center;gap:.6rem;padding:.5rem .3rem;border-radius:5px;margin-bottom:.4rem;}
-.tdot{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.12);}
-.tname{font-family:'Barlow Condensed',sans-serif;font-size:1.8rem;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1;}
-.tscore{font-family:'Barlow Condensed',sans-serif;font-size:4.2rem;font-weight:900;line-height:1;min-width:70px;text-align:right;cursor:pointer;user-select:none;}
+.t1b{background:rgba(80,200,60,.15);color:#80e060;}
+.t2b{background:rgba(60,130,220,.15);color:#80b8f8;}
+.team-row{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:.7rem;padding:.5rem .3rem;margin-bottom:.4rem;}
+.tdot{width:18px;height:18px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.25);}
+.tname{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;letter-spacing:.02em;text-transform:uppercase;line-height:1;color:#e8f8e0;}
+.tscore{font-family:'Barlow Condensed',sans-serif;font-size:4.5rem;font-weight:900;line-height:1;min-width:80px;text-align:right;cursor:pointer;user-select:none;color:#b0f070;}
 .tscore:hover{opacity:.8;}
-.sbtngrp{display:flex;gap:3px;justify-content:flex-end;margin-top:1px;}
-.sbtn{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;border:1px solid #444;background:#222;color:#999;padding:2px 6px;border-radius:3px;cursor:pointer;}
-.sbtn:hover{background:#333;color:#fff;}
-.sbtn-u{color:var(--rl);border-color:var(--rd);}
-.cdiv{border-top:1px solid #222;margin:.6rem 0;}
-.winner-banner{background:rgba(45,122,58,.2);border:1px solid var(--g);border-radius:5px;padding:.4rem .8rem;text-align:center;margin-top:.4rem;font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gl);display:none;}
+.sbtngrp{display:flex;gap:4px;justify-content:flex-end;margin-top:2px;}
+.sbtn{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;border:1px solid rgba(100,200,80,.3);background:rgba(30,80,30,.5);color:#90d070;padding:3px 7px;border-radius:3px;cursor:pointer;}
+.sbtn:hover{background:rgba(60,140,60,.5);color:#c0f090;}
+.sbtn-u{color:#e08080;border-color:rgba(200,80,80,.3);background:rgba(70,20,20,.4);}
+.cdiv{border-top:1px solid rgba(100,200,80,.1);margin:.6rem 0;}
+.winner-banner{background:rgba(80,200,60,.12);border:1px solid rgba(100,200,80,.4);border-radius:6px;padding:.4rem .8rem;text-align:center;margin-top:.4rem;font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#90e870;display:none;}
 .winner-banner.show{display:block;}
-.chrono-bar{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:2px solid #222;padding:.4rem 1rem;display:flex;align-items:center;justify-content:space-between;z-index:100;flex-wrap:wrap;gap:.4rem;}
-.chrono-lbl{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:.1rem;}
-.chrono-disp{font-family:'Barlow Condensed',sans-serif;font-size:3.8rem;font-weight:900;color:var(--gl);line-height:1;letter-spacing:.05em;}
-.chrono-disp.warn{color:var(--al);}
-.chrono-disp.dng{color:var(--rl);}
-.arb-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;}
-.arb-teams{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#999;}
-.rnav{display:flex;gap:.3rem;align-items:center;}
-.rnav button{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;border:1px solid #333;background:#1a1a1a;color:#777;padding:.25rem .6rem;border-radius:3px;cursor:pointer;}
-.rnav button:hover{color:#fff;border-color:#555;}
+.chrono-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,30,15,.95);border-top:2px solid rgba(100,200,80,.2);padding:.4rem 1rem;display:flex;align-items:center;justify-content:space-between;z-index:100;flex-wrap:wrap;gap:.4rem;backdrop-filter:blur(4px);}
+.chrono-lbl{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(160,230,160,.4);margin-bottom:.1rem;}
+.chrono-disp{font-family:'Barlow Condensed',sans-serif;font-size:3.8rem;font-weight:900;color:#90e860;line-height:1;letter-spacing:.05em;}
+.chrono-disp.warn{color:#f0c860;}.chrono-disp.dng{color:#f08080;}
+.arb-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(160,230,160,.4);}
+.arb-teams{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#80b860;}
+.rnav button{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;border:1px solid rgba(100,200,80,.3);background:rgba(30,80,30,.5);color:#80b060;padding:.25rem .6rem;border-radius:3px;cursor:pointer;}
+.rnav button:hover{color:#c0e890;}
 
-/* PLANNING */
-.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gl);margin-bottom:1rem;border-bottom:2px solid var(--gd);padding-bottom:.4rem;}
-.settings-bar{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;background:#1a1a1a;border-radius:5px;padding:.7rem .9rem;margin-bottom:1.2rem;border:1px solid #2a2a2a;}
-.settings-bar label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#777;}
-.settings-bar input,.settings-bar select{background:#222;border:1px solid #444;color:#fff;padding:.25rem .5rem;border-radius:4px;font-size:.85rem;font-family:'Barlow',sans-serif;}
-.btn-calc{background:var(--gd);border:1px solid var(--g);color:var(--gl);padding:.3rem .8rem;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;}
-.btn-calc:hover{background:var(--g);}
+/* ─── PLANNING ─── */
+.settings-bar{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;background:var(--card);border-radius:9px;padding:.7rem .9rem;margin-bottom:1.2rem;border:1px solid var(--border);box-shadow:0 1px 4px rgba(58,140,74,.06);}
+.settings-bar label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);}
+.settings-bar input,.settings-bar select{background:#fff;border:1px solid var(--border2);color:var(--text);padding:.25rem .5rem;border-radius:5px;font-size:.85rem;font-family:'Barlow',sans-serif;}
 .round-block{margin-bottom:1rem;}
-.round-hdr{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#444;margin-bottom:.4rem;padding-left:.3rem;}
-.mrow{display:grid;grid-template-columns:65px 1fr 24px 1fr 75px 90px;align-items:center;gap:.4rem;background:#1a1a1a;border:1px solid #222;border-radius:4px;padding:.45rem .7rem;margin-bottom:.3rem;font-size:.85rem;}
-.mrow.t1r{border-left:3px solid var(--g);}
-.mrow.t2r{border-left:3px solid var(--bl);}
-.mrow.arbr{border-left:3px solid #333;background:#141414;}
-.mtime{font-weight:600;color:#666;font-size:.8rem;}
+.round-hdr{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--text3);margin-bottom:.4rem;padding-left:.3rem;}
+.mrow{display:grid;grid-template-columns:65px 1fr 24px 1fr 60px 80px;align-items:center;gap:.4rem;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:.45rem .7rem;margin-bottom:.3rem;font-size:.85rem;box-shadow:0 1px 3px rgba(58,140,74,.05);}
+.mrow.t1r{border-left:4px solid var(--g);}
+.mrow.t2r{border-left:4px solid var(--bl);}
+.mrow.arbr{border-left:4px solid var(--g3);background:var(--card2);}
+.mtime{font-weight:600;color:var(--text3);font-size:.8rem;}
 .mteam{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.03em;}
-.mvs{color:#444;text-align:center;font-size:.7rem;font-weight:600;}
-.mlaunch{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid #333;background:#222;color:#777;padding:2px 7px;border-radius:3px;cursor:pointer;}
-.mlaunch:hover{background:#333;color:#fff;}
-.mlaunch.act{border-color:var(--g);color:var(--gl);background:rgba(45,122,58,.15);}
+.mvs{color:var(--g3);text-align:center;font-size:.7rem;font-weight:700;}
+.mlaunch{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--border2);background:var(--card2);color:var(--text2);padding:3px 7px;border-radius:4px;cursor:pointer;}
+.mlaunch:hover,.mlaunch.act{background:var(--g);color:#fff;border-color:var(--g);}
 
-/* CLASSEMENT */
-.class-wrap{overflow-x:auto;margin-bottom:1.5rem;}
+/* ─── TABLEAUX ─── */
+.class-wrap{overflow-x:auto;margin-bottom:1.2rem;}
 table.ctbl{width:100%;border-collapse:collapse;font-size:.85rem;}
-table.ctbl th{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#555;padding:.35rem .5rem;text-align:left;border-bottom:1px solid #222;}
-table.ctbl td{padding:.4rem .5rem;border-bottom:1px solid #1a1a1a;color:#ccc;vertical-align:middle;}
-.rk{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;color:#444;width:28px;}
-.gold{color:#f4c542!important;}.silver{color:#aaa!important;}.bronze{color:#cd7f32!important;}
+table.ctbl thead{background:var(--gll);}
+table.ctbl th{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:.4rem .55rem;text-align:left;border-bottom:2px solid var(--g3);}
+table.ctbl td{padding:.42rem .55rem;border-bottom:1px solid var(--gll);color:var(--text);background:#fff;}
+table.ctbl tr:nth-child(even) td{background:var(--card2);}
+.rk{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;color:var(--text3);width:28px;}
+.gold{color:#b07800!important;}.silver{color:#5a7a5a!important;}.bronze{color:#7a5020!important;}
 .tcell{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.03em;}
-.ptsbdg{display:inline-block;background:rgba(45,122,58,.2);color:var(--gl);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.95rem;padding:1px 7px;border-radius:3px;min-width:28px;text-align:center;}
-.ptsbdg-fin{background:rgba(244,197,66,.15);color:#f4c542;}
+.ptsbdg{display:inline-block;background:var(--gll);color:var(--gd);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.92rem;padding:1px 8px;border-radius:4px;min-width:28px;text-align:center;border:1px solid var(--g3);}
+.ptsbdg-fin{background:#fffbea;color:#806000;border-color:#d4b040;}
 
-/* RÈGLES */
-.rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.8rem;margin-bottom:1.2rem;}
-.rcard{background:#1a1a1a;border:1px solid #222;border-radius:7px;padding:.9rem 1.1rem;}
-.rcard-title{font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gl);margin-bottom:.5rem;}
-.rcard p{font-size:.85rem;color:#ccc;line-height:1.45;margin-bottom:.35rem;}
-.rhl{background:rgba(224,123,0,.12);border-left:3px solid var(--am);border-radius:0 4px 4px 0;padding:.35rem .7rem;margin-top:.4rem;font-size:.82rem;color:var(--al);font-weight:600;line-height:1.35;}
-.rhl.grn{background:rgba(45,122,58,.12);border-left-color:var(--g);color:var(--gl);}
-.eco-banner{background:rgba(45,122,58,.1);border:1px solid var(--gd);border-radius:7px;padding:.9rem 1.1rem;margin-bottom:1.2rem;display:flex;gap:.8rem;align-items:flex-start;}
-.eco-ico{font-size:1.8rem;flex-shrink:0;}
-.eco-txt{font-size:.85rem;color:#ccc;line-height:1.45;}
-.eco-txt strong{color:var(--gl);}
+/* ─── REGLES ─── */
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.9rem;margin-bottom:1.2rem;}
+.rcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;box-shadow:0 2px 6px rgba(58,140,74,.07);}
+.rcard-title{font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gd);margin-bottom:.5rem;}
+.rcard p{font-size:.85rem;color:var(--text2);line-height:1.45;margin-bottom:.35rem;}
+.rhl{background:var(--amb);border-left:3px solid var(--am);border-radius:0 5px 5px 0;padding:.35rem .7rem;margin-top:.4rem;font-size:.82rem;color:var(--am);font-weight:600;line-height:1.35;}
+.rhl.grn{background:var(--gll);border-left-color:var(--g);color:var(--gd);}
 
-/* CONFIG */
-.cfg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.6rem;margin-bottom:1rem;}
-.cfg-card{background:#1a1a1a;border:1px solid #222;border-radius:5px;padding:.6rem .9rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
-.cfg-card label{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#888;min-width:50px;flex-shrink:0;}
-.cfg-card input[type=text]{background:#222;border:1px solid #333;color:#fff;padding:.22rem .45rem;border-radius:4px;font-size:.82rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;}
-.cfg-card input[type=color]{width:32px;height:26px;border:1px solid #333;border-radius:4px;padding:1px;background:none;cursor:pointer;flex-shrink:0;}
-.cfg-nom{background:#1e1e1e!important;border:1px solid #2a2a2a!important;color:#bbb!important;font-family:'Barlow',sans-serif!important;text-transform:none!important;}
-.btn-apply{background:var(--gd);border:1px solid var(--g);color:var(--gl);padding:.45rem 1.2rem;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;margin-top:.5rem;}
-.btn-apply:hover{background:var(--g);color:#fff;}
+/* ─── ECO GESTES TABLE ─── */
+.eco-table-wrap{overflow-x:auto;margin-top:1rem;}
+table.eco-tbl{border-collapse:collapse;font-size:.78rem;min-width:900px;width:100%;}
+table.eco-tbl th{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:.35rem .5rem;background:var(--gll);border:1px solid var(--g3);white-space:nowrap;text-align:center;}
+table.eco-tbl th.geste-col{text-align:left;min-width:210px;}
+table.eco-tbl th.cat-col{background:var(--g4);color:var(--gd);}
+table.eco-tbl td{padding:.3rem .4rem;border:1px solid var(--border);background:#fff;vertical-align:middle;text-align:center;}
+table.eco-tbl td.geste-txt{text-align:left;font-size:.82rem;color:var(--text2);padding-left:.7rem;background:var(--card2);}
+table.eco-tbl td.cat-label{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;text-transform:uppercase;color:var(--gd);background:var(--g4);white-space:nowrap;padding:.3rem .5rem;}
+table.eco-tbl tr:hover td{background:var(--gll);}
+table.eco-tbl tr:hover td.geste-txt{background:var(--gll);}
+table.eco-tbl tr:hover td.cat-label{background:var(--g3);}
+.eco-chk-cell{cursor:pointer;}
+.eco-chk-box{width:22px;height:22px;border-radius:5px;border:2px solid var(--border2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;background:#fff;}
+.eco-chk-box.done{background:var(--g);border-color:var(--g);color:#fff;}
+.eco-score-cell{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;color:var(--gd);}
+/* en-têtes équipes colorés */
+.eco-tbl-total{background:var(--gll);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.9rem;color:var(--gd);border-top:2px solid var(--g);}
 
-/* ATHLÉ */
+/* ─── ATHLÉ ─── */
 .ath-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.8rem;}
-.ath-card{background:#1a1a1a;border:1px solid #222;border-radius:7px;padding:.9rem 1rem;}
+.ath-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.9rem 1rem;box-shadow:0 2px 6px rgba(58,140,74,.07);}
 .ath-card-hdr{display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;}
 .ath-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
-.ath-card-title{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
-.ath-section{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#555;margin:.5rem 0 .3rem;}
+.ath-card-title{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--gd);}
+.ath-section{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin:.5rem 0 .3rem;background:var(--gll);padding:.2rem .5rem;border-radius:3px;}
 .ath-athlete-row{display:grid;grid-template-columns:1fr 90px;align-items:center;gap:.4rem;margin-bottom:.25rem;}
-.ath-athlete-name{font-size:.82rem;color:#aaa;}
-.ath-athlete-row input{background:#222;border:1px solid #333;color:#fff;padding:.2rem .4rem;border-radius:4px;font-size:.82rem;width:100%;font-family:'Barlow Condensed',sans-serif;text-align:center;}
-.ath-save-btn{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--g);background:rgba(45,122,58,.15);color:var(--gl);padding:.25rem .7rem;border-radius:4px;cursor:pointer;margin-top:.5rem;width:100%;}
-.ath-save-btn:hover{background:var(--g);color:#fff;}
+.ath-athlete-name{font-size:.82rem;color:var(--text2);}
+.ath-athlete-row input,.ath-relay-input{background:#fff;border:1px solid var(--border2);color:var(--text);padding:.2rem .4rem;border-radius:4px;font-size:.82rem;width:100%;font-family:'Barlow Condensed',sans-serif;text-align:center;}
+.ath-save-btn{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:none;background:var(--g);color:#fff;padding:.3rem .7rem;border-radius:5px;cursor:pointer;margin-top:.5rem;width:100%;}
+.ath-save-btn:hover{background:var(--gd);}
 
-/* ÉQUIPES - édition */
+/* ─── ÉQUIPES ─── */
 .eq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:.8rem;}
-.eq-card{background:#1a1a1a;border:1px solid #222;border-radius:7px;padding:.9rem 1rem;}
-.eq-card-hdr{display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;border-bottom:1px solid #222;padding-bottom:.6rem;}
-.eq-card-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.1);}
-.eq-card-title{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
-.eq-card-subtitle{font-size:.75rem;color:#555;margin-top:.1rem;}
-/* Chaque élève : nom éditable + select équipe */
-.eleve-row{display:grid;grid-template-columns:1fr 110px 28px;align-items:center;gap:.4rem;padding:.2rem 0;border-bottom:1px solid #181818;}
+.eq-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.9rem 1rem;box-shadow:0 2px 6px rgba(58,140,74,.07);}
+.eq-card-hdr{display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;border-bottom:1px solid var(--gll);padding-bottom:.6rem;}
+.eq-card-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;}
+.eq-card-title{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--gd);}
+.eq-card-subtitle{font-size:.75rem;color:var(--text3);margin-top:.1rem;}
+.eleve-row{display:grid;grid-template-columns:1fr 110px 34px;align-items:center;gap:.4rem;padding:.22rem 0;border-bottom:1px solid var(--gll);}
 .eleve-row:last-child{border-bottom:none;}
-.eleve-inp{background:#1e1e1e;border:1px solid #2a2a2a;color:#ddd;padding:.18rem .4rem;border-radius:3px;font-size:.82rem;width:100%;font-family:'Barlow',sans-serif;}
-.eleve-inp:focus{border-color:#444;outline:none;background:#222;}
-.eleve-sel{background:#1e1e1e;border:1px solid #2a2a2a;color:#aaa;padding:.18rem .3rem;border-radius:3px;font-size:.75rem;width:100%;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;}
-.eleve-sel:focus{border-color:#444;outline:none;}
-.eleve-cls{font-size:.7rem;color:#444;text-align:center;}
-.eq-save-all-btn{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--g);background:rgba(45,122,58,.15);color:var(--gl);padding:.35rem 1rem;border-radius:4px;cursor:pointer;margin-bottom:1rem;}
-.eq-save-all-btn:hover{background:var(--g);color:#fff;}
-.info-bar{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;padding:.6rem .9rem;margin-bottom:1rem;font-size:.82rem;color:#666;}
-.info-bar strong{color:#aaa;}
+.eleve-inp{background:#fff;border:1px solid var(--border);color:var(--text);padding:.18rem .4rem;border-radius:4px;font-size:.82rem;width:100%;font-family:'Barlow',sans-serif;}
+.eleve-inp:focus{border-color:var(--gl);outline:none;box-shadow:0 0 0 2px rgba(75,184,96,.2);}
+.eleve-sel{background:#fff;border:1px solid var(--border);color:var(--text2);padding:.18rem .3rem;border-radius:4px;font-size:.75rem;width:100%;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;}
+.eleve-cls{font-size:.7rem;color:var(--text3);text-align:center;background:var(--gll);border-radius:3px;padding:1px 4px;}
+
+/* ─── CONFIG ─── */
+.cfg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.6rem;margin-bottom:1rem;}
+.cfg-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.65rem .9rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+.cfg-card label{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);min-width:50px;flex-shrink:0;}
+.cfg-card input[type=text]{background:#fff;border:1px solid var(--border2);color:var(--text);padding:.22rem .45rem;border-radius:5px;font-size:.82rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;}
+.cfg-card input[type=color]{width:32px;height:26px;border:1px solid var(--border2);border-radius:4px;padding:1px;background:#fff;cursor:pointer;flex-shrink:0;}
+.cfg-nom{background:#f8fbf5!important;text-transform:none!important;font-family:'Barlow',sans-serif!important;}
+
+/* ─── ECRAN D'ACCUEIL ─── */
+#splash{position:fixed;inset:0;z-index:1000;background:linear-gradient(160deg,#1e5c2a 0%,#2e8a3e 50%,#1a4820 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;transition:opacity .5s;}
+#splash.out{opacity:0;pointer-events:none;}
+.splash-logos{display:flex;gap:1.5rem;justify-content:center;margin-bottom:1.5rem;flex-wrap:wrap;}
+.splash-logo-svg{opacity:.9;}
+.splash-title{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#d4f7da;margin-bottom:.3rem;}
+.splash-sub{font-size:1rem;color:rgba(212,247,218,.75);margin-bottom:2rem;}
+.splash-section{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(212,247,218,.5);margin-bottom:.8rem;}
+.splash-gestes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.5rem;max-width:900px;width:100%;margin-bottom:2rem;}
+.splash-geste{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.5rem .8rem;display:flex;align-items:center;gap:.6rem;text-align:left;}
+.splash-geste-ico{font-size:1.1rem;flex-shrink:0;}
+.splash-geste-txt{font-size:.82rem;color:rgba(212,247,218,.9);line-height:1.3;}
+.splash-geste-pts{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:800;color:#a0e878;flex-shrink:0;}
+.splash-btn{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border:none;background:#a0e848;color:#1a4820;padding:.7rem 2.5rem;border-radius:10px;cursor:pointer;box-shadow:0 4px 20px rgba(160,232,72,.35);transition:transform .1s,box-shadow .1s;}
+.splash-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(160,232,72,.45);}
 
 @media(max-width:700px){
   .courts{grid-template-columns:1fr;}
-  .mrow{grid-template-columns:50px 1fr 20px 1fr 55px;font-size:.8rem;}
-  .tscore{font-size:3rem;}
-  .tname{font-size:1.4rem;}
+  .mrow{grid-template-columns:50px 1fr 20px 1fr 50px;font-size:.8rem;}
+  .tscore{font-size:3.2rem;}
+  .tname{font-size:1.5rem;}
+  .splash-gestes{grid-template-columns:1fr;}
 }
 </style>
 </head>
 <body>
 
+<!-- ══════════ SPLASH / ÉCRAN D'ACCUEIL ══════════ -->
+<div id="splash">
+  <div class="splash-logos">
+    <!-- Logo recyclage SVG -->
+    <svg class="splash-logo-svg" width="72" height="72" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 10 L62 30 L54 30 L54 50 L70 50 L62 65 L50 45 L38 65 L30 50 L46 50 L46 30 L38 30 Z" fill="rgba(160,232,100,.9)"/>
+      <path d="M20 65 L10 50 L26 50 L32 38 L44 58 L32 58 L38 70 L20 70 Z" fill="rgba(160,232,100,.7)"/>
+      <path d="M80 65 L90 50 L74 50 L68 38 L56 58 L68 58 L62 70 L80 70 Z" fill="rgba(160,232,100,.7)"/>
+    </svg>
+    <!-- Logo feuille SVG -->
+    <svg class="splash-logo-svg" width="60" height="72" viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 8 C20 8 8 28 10 52 C12 68 22 80 40 88 C58 80 68 68 70 52 C72 28 60 8 40 8 Z" fill="rgba(160,232,100,.7)"/>
+      <path d="M40 88 L40 50" stroke="rgba(212,247,218,.6)" stroke-width="3" stroke-linecap="round"/>
+      <path d="M40 65 C28 58 22 48 24 38" stroke="rgba(212,247,218,.5)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M40 55 C52 48 58 38 56 28" stroke="rgba(212,247,218,.5)" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <!-- Logo goutte d'eau SVG -->
+    <svg class="splash-logo-svg" width="50" height="72" viewBox="0 0 60 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 4 C30 4 6 36 6 54 C6 71 17 82 30 82 C43 82 54 71 54 54 C54 36 30 4 30 4 Z" fill="rgba(160,232,100,.65)"/>
+      <ellipse cx="22" cy="62" rx="6" ry="9" fill="rgba(255,255,255,.2)" transform="rotate(-20 22 62)"/>
+    </svg>
+  </div>
+
+  <div class="splash-title">♻️ Tournoi Recyclerie</div>
+  <div class="splash-sub">Florian & Emeric — Demi-journée Zéro Déchet</div>
+
+  <div class="splash-section">🌿 Les 15 gestes écolo — comment gagner des points bonus ?</div>
+  <div class="splash-gestes" id="splash-gestes-container"></div>
+  <div style="font-size:.82rem;color:rgba(212,247,218,.6);margin-bottom:1.5rem;">Chaque geste validé par un professeur = <strong style="color:#a0e878;">1 point bonus</strong> déduit de votre score final.</div>
+  <button class="splash-btn" onclick="closeSplash()">🏀 Commencer le tournoi →</button>
+</div>
+
+<!-- ══════════ NAVIGATION ══════════ -->
 <nav>
-  <div class="nav-logo">♻️ Recyclerie</div>
-  <button class="active" onclick="showView('match')">🏀 Match</button>
+  <div class="nav-logo" style="gap:.5rem;">
+    <svg width="18" height="18" viewBox="0 0 60 60" fill="none"><path d="M30 5L38 18H32V30L42 30L36 40L30 28L24 40L18 30H28V18H22Z" fill="#a0e848"/><path d="M12 40L6 30H16L20 22L27 35H20L24 43H12Z" fill="#a0e848" opacity=".7"/><path d="M48 40L54 30H44L40 22L33 35H40L36 43H48Z" fill="#a0e848" opacity=".7"/></svg>
+    Recyclerie
+    <span id="sync-dot" title="Synchronisation Firebase" style="width:8px;height:8px;border-radius:50%;background:#f0c060;display:inline-block;margin-left:.2rem;flex-shrink:0;"></span>
+  </div>
+  <button onclick="showView('match')">🏀 Match</button>
   <button onclick="showView('planning')">📋 Planning</button>
   <button onclick="showView('classement')">🏆 Basket</button>
   <button onclick="showView('athle')">🏃 Athlé</button>
+  <button onclick="showView('ecolo')">🌿 Écolo</button>
   <button onclick="showView('final')">🥇 Final</button>
-  <button onclick="showView('regles')">📖 Règles</button>
+  <button onclick="showView('regles-basket')">📖 Règles basket</button>
   <button onclick="showView('equipes')">👥 Équipes</button>
   <button onclick="showView('config')">⚙️ Config</button>
-  <span class="eco-badge">🌿 Zéro plastique</span>
 </nav>
 
-<!-- ========== MODE MATCH ========== -->
-<div id="view-match" class="view active">
+<!-- ══════════ MATCH ══════════ -->
+<div id="view-match" class="view">
   <div class="mhdr">
     <div class="mhdr-title" id="mhdr-info">Terrain 1 · Match 1 | Terrain 2 · Match 2</div>
     <div class="mhdr-ctrl">
@@ -181,205 +291,134 @@ table.ctbl td{padding:.4rem .5rem;border-bottom:1px solid #1a1a1a;color:#ccc;ver
       <button class="btn-g" id="btn-start" onclick="toggleChrono()">▶ Démarrer</button>
       <button onclick="resetChrono()">Reset chrono</button>
       <select id="dur-select" onchange="updateDuration()" style="width:80px;">
-        <option value="480">8 min</option>
-        <option value="600" selected>10 min</option>
-        <option value="720">12 min</option>
-        <option value="900">15 min</option>
+        <option value="480">8 min</option><option value="600" selected>10 min</option>
+        <option value="720">12 min</option><option value="900">15 min</option>
       </select>
       <button onclick="toggleFS()">⛶ Plein écran</button>
     </div>
   </div>
   <div class="courts">
     <div class="court">
-      <div class="court-info">
-        <span class="mnum" id="c1-mnum">Match 1</span>
-        <span class="mstatus ec" id="c1-status">En cours</span>
-        <span class="tbadge t1b">Terrain 1</span>
-      </div>
-      <div class="team-row">
-        <div class="tdot" id="c1-d1"></div>
-        <div class="tname" id="c1-n1">—</div>
-        <div>
-          <div class="tscore" id="c1-s1" onclick="ap(1,1,1)">0</div>
-          <div class="sbtngrp">
-            <button class="sbtn" onclick="ap(1,1,1)">+1</button>
-            <button class="sbtn" onclick="ap(1,1,2)">+2</button>
-            <button class="sbtn sbtn-u" onclick="ap(1,1,-1)">−1</button>
-          </div>
-        </div>
-      </div>
+      <div class="court-info"><span class="mnum" id="c1-mnum">Match 1</span><span class="mstatus ec" id="c1-status">En cours</span><span class="tbadge t1b">Terrain 1</span></div>
+      <div class="team-row"><div class="tdot" id="c1-d1"></div><div class="tname" id="c1-n1">—</div><div><div class="tscore" id="c1-s1" onclick="ap(1,1,1)">0</div><div class="sbtngrp"><button class="sbtn" onclick="ap(1,1,1)">+1</button><button class="sbtn" onclick="ap(1,1,2)">+2</button><button class="sbtn sbtn-u" onclick="ap(1,1,-1)">−1</button></div></div></div>
       <div class="cdiv"></div>
-      <div class="team-row">
-        <div class="tdot" id="c1-d2"></div>
-        <div class="tname" id="c1-n2">—</div>
-        <div>
-          <div class="tscore" id="c1-s2" onclick="ap(1,2,1)">0</div>
-          <div class="sbtngrp">
-            <button class="sbtn" onclick="ap(1,2,1)">+1</button>
-            <button class="sbtn" onclick="ap(1,2,2)">+2</button>
-            <button class="sbtn sbtn-u" onclick="ap(1,2,-1)">−1</button>
-          </div>
-        </div>
-      </div>
+      <div class="team-row"><div class="tdot" id="c1-d2"></div><div class="tname" id="c1-n2">—</div><div><div class="tscore" id="c1-s2" onclick="ap(1,2,1)">0</div><div class="sbtngrp"><button class="sbtn" onclick="ap(1,2,1)">+1</button><button class="sbtn" onclick="ap(1,2,2)">+2</button><button class="sbtn sbtn-u" onclick="ap(1,2,-1)">−1</button></div></div></div>
       <div class="winner-banner" id="c1-win"></div>
     </div>
     <div class="court">
-      <div class="court-info">
-        <span class="mnum" id="c2-mnum">Match 2</span>
-        <span class="mstatus ec" id="c2-status">En cours</span>
-        <span class="tbadge t2b">Terrain 2</span>
-      </div>
-      <div class="team-row">
-        <div class="tdot" id="c2-d1"></div>
-        <div class="tname" id="c2-n1">—</div>
-        <div>
-          <div class="tscore" id="c2-s1" onclick="ap(2,1,1)">0</div>
-          <div class="sbtngrp">
-            <button class="sbtn" onclick="ap(2,1,1)">+1</button>
-            <button class="sbtn" onclick="ap(2,1,2)">+2</button>
-            <button class="sbtn sbtn-u" onclick="ap(2,1,-1)">−1</button>
-          </div>
-        </div>
-      </div>
+      <div class="court-info"><span class="mnum" id="c2-mnum">Match 2</span><span class="mstatus ec" id="c2-status">En cours</span><span class="tbadge t2b">Terrain 2</span></div>
+      <div class="team-row"><div class="tdot" id="c2-d1"></div><div class="tname" id="c2-n1">—</div><div><div class="tscore" id="c2-s1" onclick="ap(2,1,1)">0</div><div class="sbtngrp"><button class="sbtn" onclick="ap(2,1,1)">+1</button><button class="sbtn" onclick="ap(2,1,2)">+2</button><button class="sbtn sbtn-u" onclick="ap(2,1,-1)">−1</button></div></div></div>
       <div class="cdiv"></div>
-      <div class="team-row">
-        <div class="tdot" id="c2-d2"></div>
-        <div class="tname" id="c2-n2">—</div>
-        <div>
-          <div class="tscore" id="c2-s2" onclick="ap(2,2,1)">0</div>
-          <div class="sbtngrp">
-            <button class="sbtn" onclick="ap(2,2,1)">+1</button>
-            <button class="sbtn" onclick="ap(2,2,2)">+2</button>
-            <button class="sbtn sbtn-u" onclick="ap(2,2,-1)">−1</button>
-          </div>
-        </div>
-      </div>
+      <div class="team-row"><div class="tdot" id="c2-d2"></div><div class="tname" id="c2-n2">—</div><div><div class="tscore" id="c2-s2" onclick="ap(2,2,1)">0</div><div class="sbtngrp"><button class="sbtn" onclick="ap(2,2,1)">+1</button><button class="sbtn" onclick="ap(2,2,2)">+2</button><button class="sbtn sbtn-u" onclick="ap(2,2,-1)">−1</button></div></div></div>
       <div class="winner-banner" id="c2-win"></div>
     </div>
   </div>
   <div class="chrono-bar">
-    <div>
-      <div class="arb-lbl">Arbitrage</div>
-      <div class="arb-teams" id="arb-disp">—</div>
-    </div>
-    <div style="text-align:center;">
-      <div class="chrono-lbl">Temps restant</div>
-      <div class="chrono-disp" id="chrono">10:00</div>
-    </div>
-    <div class="rnav">
-      <button onclick="prevRound()">◀ Préc.</button>
-      <button id="rinfo-btn" style="color:#aaa;border-color:#444;">Round 1</button>
-      <button onclick="nextRound()">Suiv. ▶</button>
-    </div>
+    <div><div class="arb-lbl">Arbitrage</div><div class="arb-teams" id="arb-disp">—</div></div>
+    <div style="text-align:center;"><div class="chrono-lbl">Temps restant</div><div class="chrono-disp" id="chrono">10:00</div></div>
+    <div class="rnav" style="display:flex;gap:.3rem;"><button onclick="prevRound()">◀ Préc.</button><button id="rinfo-btn" style="color:#aaa;">Round 1</button><button onclick="nextRound()">Suiv. ▶</button></div>
   </div>
 </div>
 
-<!-- ========== PLANNING ========== -->
+<!-- ══════════ PLANNING ══════════ -->
 <div id="view-planning" class="view">
-  <div class="sec-title">Planning du tournoi basket</div>
-  <div style="background:#1a1a1a;border:1px solid #222;border-radius:5px;padding:.6rem .9rem;margin-bottom:.8rem;font-size:.82rem;color:#777;">
-    <strong style="color:#aaa;">Matinée 1 :</strong> Éq. 1–6 basket · Éq. 7–12 athlétisme &nbsp;|&nbsp;
-    <strong style="color:var(--bll);">Matinée 2 :</strong> Éq. 7–12 basket · Éq. 1–6 athlétisme
-  </div>
+  <div class="sec-title">📋 Planning basket</div>
+  <div class="info-bar"><strong>Matinée 1 :</strong> Éq. 1–6 basket · Éq. 7–12 athlé &nbsp;|&nbsp; <strong>Matinée 2 :</strong> Éq. 7–12 basket · Éq. 1–6 athlé</div>
   <div class="settings-bar">
     <label>Début</label><input type="time" id="stime" value="09:00" onchange="recalc()" style="width:90px;">
-    <label>Durée match</label><input type="number" id="mdur" value="10" min="5" max="20" onchange="recalc()" style="width:60px;">
-    <span style="color:#555;font-size:.8rem;">min</span>
-    <label>Pause</label><input type="number" id="bdur" value="2" min="0" max="5" onchange="recalc()" style="width:50px;">
-    <span style="color:#555;font-size:.8rem;">min</span>
-    <label>Groupe</label>
-    <select id="group-sel" onchange="recalc()" style="width:130px;">
-      <option value="0">Équipes 1–6</option>
-      <option value="1">Équipes 7–12</option>
-    </select>
-    <button class="btn-calc" onclick="recalc()">Recalculer</button>
+    <label>Durée</label><input type="number" id="mdur" value="10" min="5" max="20" onchange="recalc()" style="width:60px;"><span style="color:var(--text3);font-size:.8rem;">min</span>
+    <label>Pause</label><input type="number" id="bdur" value="2" min="0" max="5" onchange="recalc()" style="width:50px;"><span style="color:var(--text3);font-size:.8rem;">min</span>
+    <label>Groupe</label><select id="group-sel" onchange="recalc()" style="width:130px;"><option value="0">Équipes 1–6</option><option value="1">Équipes 7–12</option></select>
+    <button class="btn-main" onclick="recalc()">Recalculer</button>
   </div>
   <div id="planning-container"></div>
 </div>
 
-<!-- ========== CLASSEMENT BASKET ========== -->
+<!-- ══════════ CLASSEMENT BASKET ══════════ -->
 <div id="view-classement" class="view">
-  <div class="sec-title">Classement basket</div>
+  <div class="sec-title">🏆 Classement basket</div>
   <div style="display:flex;gap:.6rem;margin-bottom:.8rem;">
     <button onclick="showGroup(0)" id="gbtn0" class="gbtn act">Groupe A (Éq. 1–6)</button>
     <button onclick="showGroup(1)" id="gbtn1" class="gbtn">Groupe B (Éq. 7–12)</button>
   </div>
   <div class="class-wrap"><table class="ctbl"><thead><tr><th>#</th><th>Équipe</th><th>J</th><th>V</th><th>D</th><th>Pts+</th><th>Pts−</th><th>Diff</th><th>Pts</th></tr></thead><tbody id="ctbl-body"></tbody></table></div>
-  <p style="font-size:.75rem;color:#444;">Victoire=2pts · Défaite=1pt · Départage: différence puis points marqués</p>
+  <p style="font-size:.75rem;color:var(--text3);">Victoire=2pts · Défaite=1pt · Départage: différence puis points marqués</p>
 </div>
 
-<!-- ========== ATHLÉ ========== -->
+<!-- ══════════ ATHLÉ ══════════ -->
 <div id="view-athle" class="view">
-  <div class="sec-title">Athlétisme — Saisie des résultats</div>
-  <div class="info-bar">Épreuves : <strong>Relais 6×100m</strong> (temps en secondes) + <strong>Saut en longueur</strong> (meilleur saut par athlète en cm).</div>
+  <div class="sec-title">🏃 Athlétisme — Résultats</div>
+  <div class="info-bar"><strong>Relais 6×100m</strong> (temps en secondes) + <strong>Saut en longueur</strong> (meilleur saut par athlète en cm).</div>
   <div class="ath-grid" id="ath-grid"></div>
   <div style="margin-top:1.5rem;">
     <div class="sec-title">Classement athlétisme</div>
     <div style="display:flex;gap:.6rem;margin-bottom:.8rem;">
-      <button onclick="calcAthle();showAthleGroup(0)" class="gbtn act">Groupe A (Éq. 1–6)</button>
-      <button onclick="calcAthle();showAthleGroup(1)" class="gbtn">Groupe B (Éq. 7–12)</button>
+      <button onclick="calcAthle();showAthleGroup(0)" class="gbtn act">Groupe A</button>
+      <button onclick="calcAthle();showAthleGroup(1)" class="gbtn">Groupe B</button>
     </div>
-    <div class="class-wrap"><table class="ctbl"><thead><tr><th>#</th><th>Équipe</th><th>Relais (s)</th><th>Cl.Relais</th><th>Longueur (cm)</th><th>Cl.Long.</th><th>Pts athlé</th></tr></thead><tbody id="ath-ctbl"></tbody></table></div>
+    <div class="class-wrap"><table class="ctbl"><thead><tr><th>#</th><th>Équipe</th><th>Relais (s)</th><th>Cl.</th><th>Longueur (cm)</th><th>Cl.</th><th>Pts athlé</th></tr></thead><tbody id="ath-ctbl"></tbody></table></div>
   </div>
 </div>
 
-<!-- ========== CLASSEMENT FINAL ========== -->
+<!-- ══════════ ÉCOLO ══════════ -->
+<div id="view-ecolo" class="view">
+  <div class="sec-title">🌿 Points bonus écolo</div>
+  <div class="info-bar">Coche les gestes validés par équipe. <strong>1 geste coché = 1 point bonus</strong> déduit du score final. Maximum 15 pts par équipe.</div>
+  <div class="eco-table-wrap">
+    <table class="eco-tbl" id="eco-tbl"></table>
+  </div>
+</div>
+
+<!-- ══════════ FINAL ══════════ -->
 <div id="view-final" class="view">
   <div class="sec-title">🥇 Classement général final</div>
-  <p style="font-size:.82rem;color:#666;margin-bottom:1rem;">Rang basket + Rang athlé − Bonus écolo. Score le plus bas = meilleur classement.</p>
-  <div class="class-wrap">
-    <table class="ctbl"><thead><tr><th>#</th><th>Équipe</th><th>Cl.Basket</th><th>Pts Basket</th><th>Cl.Athlé</th><th>Bonus écolo</th><th>Score final</th></tr></thead><tbody id="final-body"></tbody></table>
-  </div>
-  <div style="margin-top:1rem;background:#1a1a1a;border:1px solid #222;border-radius:5px;padding:.8rem 1rem;">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:.6rem;">Bonus écolo — saisie (pts déduits du score final)</div>
-    <div id="bonus-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem;"></div>
-    <button class="btn-apply" onclick="calcFinal()" style="margin-top:.8rem;">Recalculer le classement final</button>
-  </div>
+  <div class="info-bar">Rang basket + Rang athlé − Points écolo. <strong>Score le plus bas = meilleur classement.</strong></div>
+  <div class="class-wrap"><table class="ctbl"><thead><tr><th>#</th><th>Équipe</th><th>Cl. Basket</th><th>Cl. Athlé</th><th>🌿 Bonus écolo</th><th>Score final</th></tr></thead><tbody id="final-body"></tbody></table></div>
 </div>
 
-<!-- ========== RÈGLES ========== -->
-<div id="view-regles" class="view">
-  <div class="sec-title">Règles du tournoi 4×4</div>
-  <div class="eco-banner">
-    <div class="eco-ico">🌿</div>
-    <div class="eco-txt"><strong>Tournoi Recyclerie — Objectif Zéro Déchet</strong><br>Gourde réutilisable obligatoire. Pas de bouteille plastique. Les équipes les plus écolos gagnent des points bonus !</div>
+<!-- ══════════ RÈGLES BASKET ══════════ -->
+<div id="view-regles-basket" class="view">
+  <div class="sec-title">📖 Règles basket 4×4</div>
+  <div style="background:linear-gradient(135deg,var(--gll),var(--card2));border:1px solid var(--g3);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.2rem;display:flex;gap:.9rem;align-items:flex-start;">
+    <div style="font-size:2rem;flex-shrink:0;">🏀</div>
+    <div style="font-size:.88rem;color:var(--text2);line-height:1.5;"><strong style="color:var(--gd);">Format :</strong> 4 contre 4 · Demi-terrain · 2 matchs simultanés · 2 équipes arbitrent par rotation.<br><strong style="color:var(--gd);">Fin de match :</strong> première équipe à <strong>15 points</strong>, ou fin du temps imparti (<strong>10 min</strong>).</div>
   </div>
   <div class="rules-grid">
-    <div class="rcard"><div class="rcard-title">👥 Format</div><p>4 contre 4 sur demi-terrain. 2 matchs simultanés, 2 équipes arbitrent.</p><div class="rhl grn">Match terminé : 15 pts atteints OU fin du temps (10 min)</div></div>
-    <div class="rcard"><div class="rcard-title">🔄 Check Ball</div><p>Après chaque panier ou faute : défenseur passe à l'attaquant, qui le rend, et le jeu repart.</p><div class="rhl">Pas de check ball = pas de jeu !</div></div>
-    <div class="rcard"><div class="rcard-title">🔁 Règle de l'arc — ESSENTIELLE</div><p>Après un panier encaissé ou récupération défensive, le ballon DOIT sortir derrière l'arc avant d'attaquer.</p><div class="rhl">Récupération défensive → obligé de repasser derrière la ligne des 3 pts !</div></div>
-    <div class="rcard"><div class="rcard-title">🎯 Points</div><p><strong style="color:#fff;">1 point</strong> — tir dans l'arc. &nbsp;<strong style="color:#f4c542;">2 points</strong> — tir derrière l'arc.</p><div class="rhl grn">Objectif : 15 points pour gagner !</div></div>
-    <div class="rcard"><div class="rcard-title">⏱️ Chrono</div><p>Chrono continu. La table de marque du gymnase fait référence pour le buzzer.</p><div class="rhl grn">15 pts avant la fin = match terminé immédiatement.</div></div>
-    <div class="rcard"><div class="rcard-title">🌱 Bonus Écolo</div><p>Gourde réutilisable · Tri des déchets · Zéro plastique · Comportement exemplaire</p><div class="rhl grn">Jusqu'à 10 pts bonus par équipe dans le classement final !</div></div>
+    <div class="rcard"><div class="rcard-title">🔄 Check Ball — règle clé</div><p>Après chaque panier marqué ou faute sifflée, le jeu reprend obligatoirement par un <strong>check ball</strong>.</p><p>Le défenseur passe le ballon à l'attaquant derrière l'arc. L'attaquant le rend. Le jeu repart.</p><div class="rhl">Sans check ball = le panier ne compte pas et le jeu ne repart pas !</div></div>
+    <div class="rcard"><div class="rcard-title">🔁 Règle de l'arc — ESSENTIELLE</div><p>Après un panier encaissé <strong>ou</strong> une récupération défensive (interception, rebond), l'équipe qui repart en attaque doit <strong>obligatoirement sortir le ballon derrière l'arc des 3 points</strong> avant d'attaquer.</p><div class="rhl">Si tu récupères en défense → tu dois repasser derrière la ligne des 3 pts avant d'attaquer. Sinon : perte de balle !</div></div>
+    <div class="rcard"><div class="rcard-title">🎯 Valeur des paniers</div><p><strong style="font-size:1rem;">1 point</strong> — tout tir rentré depuis l'intérieur de l'arc de cercle.</p><p><strong style="font-size:1rem;">2 points</strong> — tir rentré depuis derrière l'arc (ligne des 3 pts classique).</p><div class="rhl grn">Objectif : atteindre 15 points en premier pour gagner !</div></div>
+    <div class="rcard"><div class="rcard-title">⚠️ Fautes</div><p><strong>Faute personnelle :</strong> remise en jeu par l'équipe adverse avec check ball à l'arc.</p><p><strong>Faute flagrante :</strong> 2 lancers francs (1 pt chacun) + possession du ballon.</p><p>Pas de 5e faute éliminatoire sur ce format.</p></div>
+    <div class="rcard"><div class="rcard-title">🏃 Violations courantes</div><p><strong>Marcher (pivot) :</strong> perte de balle, remise adverse.</p><p><strong>Double dribble :</strong> perte de balle, remise adverse.</p><p><strong>Sortie en touche :</strong> remise adverse à l'endroit de la sortie.</p></div>
+    <div class="rcard"><div class="rcard-title">⏱️ Chrono & arbitrage</div><p>Le chrono <strong>ne s'arrête pas</strong> (temps continu). La table de marque du gymnase fait référence pour le temps et le buzzer.</p><p>2 équipes assurent l'arbitrage pendant que les 4 autres jouent. Rotation à chaque round.</p><div class="rhl grn">Si 15 pts sont atteints avant la fin du temps → match terminé immédiatement !</div></div>
   </div>
 </div>
 
-<!-- ========== ÉQUIPES ========== -->
+<!-- ══════════ ÉQUIPES ══════════ -->
 <div id="view-equipes" class="view">
-  <div class="sec-title">Composition des équipes</div>
-  <div class="info-bar">
-    Modifie les <strong>prénoms</strong> directement dans les champs. Utilise le <strong>menu déroulant</strong> pour transférer un élève dans une autre équipe. Clique sur <strong>Enregistrer tout</strong> pour appliquer.
+  <div class="sec-title">👥 Composition des équipes</div>
+  <div style="background:linear-gradient(135deg,var(--gll),var(--card2));border:1px solid var(--g3);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;display:flex;gap:.9rem;align-items:flex-start;">
+    <div style="font-size:2rem;flex-shrink:0;">🌿</div>
+    <div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gd);margin-bottom:.3rem;">Choisissez un nom d'équipe écolo !</div>
+      <div style="font-size:.87rem;color:var(--text2);line-height:1.5;">Donnez un <strong>nom en lien avec l'écologie</strong> (ex : <em>Les Pandas Verts</em>, <em>Team Compost</em>, <em>Les Recycleurs Fous</em>…). Le nom le plus créatif peut rapporter des <strong style="color:var(--gd);">points bonus</strong> !</div>
+    </div>
   </div>
-  <button class="eq-save-all-btn" onclick="saveAllEleves()">💾 Enregistrer tous les changements</button>
+  <div class="info-bar">Modifie les <strong>prénoms</strong> et le <strong>nom d'équipe</strong>. Menu déroulant pour <strong>transférer un élève</strong>. Clique sur <strong>Enregistrer</strong>.</div>
+  <button class="btn-main" style="margin-bottom:1rem;" onclick="saveAllEleves()">💾 Enregistrer tous les changements</button>
   <div class="eq-grid" id="eq-grid"></div>
 </div>
 
-<!-- ========== CONFIG ========== -->
+<!-- ══════════ CONFIG ══════════ -->
 <div id="view-config" class="view">
-  <div class="sec-title">Configuration des équipes</div>
-  <p style="color:#666;font-size:.85rem;margin-bottom:.9rem;">Noms courts, noms d'équipe (ex: "Les Tigres"), couleurs de maillots.</p>
+  <div class="sec-title">⚙️ Configuration des équipes</div>
+  <div class="info-bar">Noms courts, <strong>noms d'équipe</strong>, <strong>couleurs</strong> de maillots.</div>
   <div class="cfg-grid" id="cfg-grid"></div>
-  <button class="btn-apply" onclick="applyConfig()">✓ Appliquer</button>
+  <button class="btn-main" onclick="applyConfig()">✓ Appliquer</button>
 </div>
 
-<style>
-.gbtn{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:.3rem .8rem;border-radius:4px;cursor:pointer;border:1px solid #333;background:#1a1a1a;color:#888;}
-.gbtn.act{border-color:var(--g);background:rgba(45,122,58,.2);color:var(--gl);}
-</style>
-
 <script>
-// ===== DONNÉES ÉLÈVES (source de vérité, modifiable) =====
-const DEFAULT_ELEVES = [
+// ══ DONNÉES ══
+const DEFAULT_ELEVES=[
   {id:0,prenom:'Arsène',classe:'3C',eq:0},{id:1,prenom:'Chloé',classe:'3C',eq:0},{id:2,prenom:'Nina',classe:'3C',eq:0},
   {id:3,prenom:'Jules',classe:'3A',eq:0},{id:4,prenom:'Oscar',classe:'3A',eq:0},{id:5,prenom:'Hadrien',classe:'3A',eq:0},
   {id:6,prenom:'Augustin',classe:'3A',eq:1},{id:7,prenom:'Evan',classe:'3C',eq:1},{id:8,prenom:'Aarone',classe:'3C',eq:1},
@@ -405,241 +444,189 @@ const DEFAULT_ELEVES = [
   {id:65,prenom:'Anatole',classe:'3C',eq:11},{id:66,prenom:'Hadi',classe:'3B',eq:11},{id:67,prenom:'Antoine',classe:'3A',eq:11},
   {id:68,prenom:'Leandro',classe:'3A',eq:11},{id:69,prenom:'Manée',classe:'3A',eq:11},{id:70,prenom:'Jessica',classe:'3B',eq:11},
 ];
-
-const DEF_TEAMS = [
-  {name:'Équipe 1',color:'#e74c3c',nom:''},{name:'Équipe 2',color:'#3498db',nom:''},
-  {name:'Équipe 3',color:'#f39c12',nom:''},{name:'Équipe 4',color:'#9b59b6',nom:''},
-  {name:'Équipe 5',color:'#1abc9c',nom:''},{name:'Équipe 6',color:'#e67e22',nom:''},
-  {name:'Équipe 7',color:'#e91e63',nom:''},{name:'Équipe 8',color:'#00bcd4',nom:''},
-  {name:'Équipe 9',color:'#8bc34a',nom:''},{name:'Équipe 10',color:'#ff5722',nom:''},
-  {name:'Équipe 11',color:'#607d8b',nom:''},{name:'Équipe 12',color:'#795548',nom:''},
+const DEF_TEAMS=[
+  {name:'Équipe 1',color:'#e05050',nom:''},{name:'Équipe 2',color:'#4090d0',nom:''},
+  {name:'Équipe 3',color:'#d08020',nom:''},{name:'Équipe 4',color:'#9060c0',nom:''},
+  {name:'Équipe 5',color:'#20a080',nom:''},{name:'Équipe 6',color:'#d06030',nom:''},
+  {name:'Équipe 7',color:'#c03060',nom:''},{name:'Équipe 8',color:'#3080c0',nom:''},
+  {name:'Équipe 9',color:'#40a050',nom:''},{name:'Équipe 10',color:'#e07820',nom:''},
+  {name:'Équipe 11',color:'#708090',nom:''},{name:'Équipe 12',color:'#8b6040',nom:''},
+];
+const GESTES=[
+  {id:'g01',cat:'💧 Eau',      ico:'💧',txt:'Toute l\'équipe a une gourde réutilisable'},
+  {id:'g02',cat:'💧 Eau',      ico:'🚱',txt:'Aucun gobelet jetable utilisé pendant la session'},
+  {id:'g03',cat:'💧 Eau',      ico:'🚰',txt:'Fontaine/robinet utilisé sans gaspillage'},
+  {id:'g04',cat:'🍎 Encas',    ico:'🍎',txt:'Aucun emballage plastique individuel pour les encas'},
+  {id:'g05',cat:'🍎 Encas',    ico:'📦',txt:'Encas dans boîtes ou emballage réutilisable'},
+  {id:'g06',cat:'🍎 Encas',    ico:'🧹',txt:'Pas de déchets alimentaires laissés traîner'},
+  {id:'g07',cat:'🗑️ Déchets', ico:'🌍',txt:'Zéro déchet laissé au sol à la fin'},
+  {id:'g08',cat:'🗑️ Déchets', ico:'♻️',txt:'Tri correct des déchets effectué'},
+  {id:'g09',cat:'🗑️ Déchets', ico:'🫳',txt:'Un membre a ramassé un déchet qui n\'était pas le sien'},
+  {id:'g10',cat:'👕 Matériel', ico:'👜',txt:'Sac en tissu ou pas de sac plastique'},
+  {id:'g11',cat:'👕 Matériel', ico:'🏀',txt:'Matériel partagé correctement et rangé après utilisation'},
+  {id:'g12',cat:'🤝 Esprit',   ico:'🤝',txt:'Fair-play exemplaire tout au long de la session'},
+  {id:'g13',cat:'🤝 Esprit',   ico:'👏',txt:'Encouragements actifs envers les autres équipes'},
+  {id:'g14',cat:'🌱 Engagement',ico:'🌿',txt:'L\'équipe a un nom écolo et sait l\'expliquer'},
+  {id:'g15',cat:'🌱 Engagement',ico:'💬',txt:'Chaque membre cite un geste écolo concret pour l\'avenir'},
 ];
 
-let teams = JSON.parse(localStorage.getItem('rcy_teams')||'null') || DEF_TEAMS.map(t=>({...t}));
-let eleves = JSON.parse(localStorage.getItem('rcy_eleves')||'null') || DEFAULT_ELEVES.map(e=>({...e}));
+let teams=JSON.parse(localStorage.getItem('rcy_teams')||'null')||DEF_TEAMS.map(t=>({...t}));
+let eleves=JSON.parse(localStorage.getItem('rcy_eleves')||'null')||DEFAULT_ELEVES.map(e=>({...e}));
+let ecoChecks=JSON.parse(localStorage.getItem('rcy_eco')||'null')||Array.from({length:12},()=>({}));
+let athleData=Array.from({length:12},(_,i)=>({relay:'',jumps:elevesByTeam(i).map(e=>({id:e.id,prenom:e.prenom,dist:''}))}));
+try{const s=localStorage.getItem('rcy_athle');if(s)athleData=JSON.parse(s);}catch(e){}
+let standings=[
+  [0,1,2,3,4,5].map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
+  [6,7,8,9,10,11].map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
+];
+try{const s=localStorage.getItem('rcy_standings');if(s)standings=JSON.parse(s);}catch(e){}
 
-function tLabel(i){ return (teams[i].nom&&teams[i].nom.trim()) ? teams[i].nom.trim() : teams[i].name; }
-function elevesByTeam(eq){ return eleves.filter(e=>e.eq===eq).sort((a,b)=>a.id-b.id); }
+function save(){
+  localStorage.setItem('rcy_teams',JSON.stringify(teams));
+  localStorage.setItem('rcy_eleves',JSON.stringify(eleves));
+  localStorage.setItem('rcy_eco',JSON.stringify(ecoChecks));
+  localStorage.setItem('rcy_athle',JSON.stringify(athleData));
+  localStorage.setItem('rcy_standings',JSON.stringify(standings));
+  // Firebase sync
+  if(window._fbSet){
+    window._fbSet('standings', standings);
+    window._fbSet('eco', ecoChecks);
+    window._fbSet('athle', athleData);
+    window._fbSet('teams', teams);
+    window._fbSet('eleves', eleves);
+    setSyncDot('ok');
+  }
+}
+function setSyncDot(state){
+  const d=document.getElementById('sync-dot');
+  if(d){d.style.background=state==='ok'?'#80e860':state==='err'?'#e08080':'#f0c060';}
+}
+function tLabel(i){return(teams[i].nom&&teams[i].nom.trim())?teams[i].nom.trim():teams[i].name;}
+function elevesByTeam(eq){return eleves.filter(e=>e.eq===eq).sort((a,b)=>a.id-b.id);}
+function ecoScore(i){return GESTES.filter(g=>ecoChecks[i]&&ecoChecks[i][g.id]).length;}
 
-// ===== ROUND ROBIN =====
+// ══ SPLASH ══
+function buildSplash(){
+  const c=document.getElementById('splash-gestes-container');
+  c.innerHTML=GESTES.map(g=>`
+    <div class="splash-geste">
+      <span class="splash-geste-ico">${g.ico}</span>
+      <span class="splash-geste-txt">${g.txt}</span>
+      <span class="splash-geste-pts">+1 pt</span>
+    </div>`).join('');
+}
+function closeSplash(){
+  const s=document.getElementById('splash');
+  s.classList.add('out');
+  setTimeout(()=>s.style.display='none',500);
+  showView('ecolo');
+}
+
+// ══ ROUND ROBIN ══
 function buildRR(indices){
   const pairs=[];
   for(let i=0;i<indices.length;i++) for(let j=i+1;j<indices.length;j++) pairs.push([indices[i],indices[j]]);
-  const schedule=[]; const used=new Array(pairs.length).fill(false);
+  const schedule=[];const used=new Array(pairs.length).fill(false);
   while(used.some(u=>!u)){
-    const round={games:[],refs:[]}; const inR=new Set();
+    const round={games:[],refs:[]};const inR=new Set();
     for(let i=0;i<pairs.length;i++){
-      if(used[i])continue; const [a,b]=pairs[i];
-      if(!inR.has(a)&&!inR.has(b)&&round.games.length<2){
-        round.games.push([a,b]); inR.add(a); inR.add(b); used[i]=true;
-        if(round.games.length===2)break;
-      }
+      if(used[i])continue;const[a,b]=pairs[i];
+      if(!inR.has(a)&&!inR.has(b)&&round.games.length<2){round.games.push([a,b]);inR.add(a);inR.add(b);used[i]=true;if(round.games.length===2)break;}
     }
-    indices.forEach(t=>{ if(!inR.has(t)) round.refs.push(t); });
-    schedule.push(round);
+    indices.forEach(t=>{if(!inR.has(t))round.refs.push(t);});schedule.push(round);
   }
   return schedule;
 }
-const GROUP_A=[0,1,2,3,4,5], GROUP_B=[6,7,8,9,10,11];
+const GROUP_A=[0,1,2,3,4,5],GROUP_B=[6,7,8,9,10,11];
 const schedules=[buildRR(GROUP_A),buildRR(GROUP_B)];
-let currentGroup=0, currentRound=0;
-let scores={c1:[0,0],c2:[0,0]}, matchWon={c1:false,c2:false};
-let standings=[
-  GROUP_A.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
-  GROUP_B.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
-];
+let currentGroup=0,currentRound=0;
+let scores={c1:[0,0],c2:[0,0]},matchWon={c1:false,c2:false};
 
-let athleData=Array.from({length:12},(_,i)=>({relay:'',jumps:elevesByTeam(i).map(e=>({id:e.id,prenom:e.prenom,dist:''}))}));
-try{const s=localStorage.getItem('rcy_athle');if(s)athleData=JSON.parse(s);}catch(e){}
-let bonusEcolo=Array(12).fill(0);
-try{const b=localStorage.getItem('rcy_bonus');if(b)bonusEcolo=JSON.parse(b);}catch(e){}
-
-// ===== CHRONO =====
+// ══ CHRONO ══
 let matchDur=600,chronoRem=600,chronoOn=false,chronoIv=null;
 function p2(n){return String(n).padStart(2,'0');}
 function fmt(s){return p2(Math.floor(s/60))+':'+p2(s%60);}
-function updateChronoDisplay(){
-  const el=document.getElementById('chrono'); el.textContent=fmt(chronoRem);
-  el.className='chrono-disp'+(chronoRem<=60?' dng':chronoRem<=120?' warn':'');
-}
-function updateDuration(){
-  matchDur=parseInt(document.getElementById('dur-select').value);
-  if(!chronoOn){chronoRem=matchDur;updateChronoDisplay();}
-  document.getElementById('mdur').value=matchDur/60;
-}
+function updateChronoDisplay(){const el=document.getElementById('chrono');el.textContent=fmt(chronoRem);el.className='chrono-disp'+(chronoRem<=60?' dng':chronoRem<=120?' warn':'');}
+function updateDuration(){matchDur=parseInt(document.getElementById('dur-select').value);if(!chronoOn){chronoRem=matchDur;updateChronoDisplay();}document.getElementById('mdur').value=matchDur/60;}
 function toggleChrono(){
-  if(chronoOn){
-    clearInterval(chronoIv);chronoOn=false;
-    document.getElementById('btn-start').textContent='▶ Démarrer';
-    document.getElementById('btn-start').className='btn-g';
-    setStatuses('pa');
-  } else {
-    chronoOn=true;
-    document.getElementById('btn-start').textContent='⏸ Pause';
-    document.getElementById('btn-start').className='btn-r';
-    setStatuses('ec');
-    chronoIv=setInterval(()=>{if(chronoRem>0){chronoRem--;updateChronoDisplay();if(chronoRem===0)endByTime();}},1000);
-  }
+  if(chronoOn){clearInterval(chronoIv);chronoOn=false;document.getElementById('btn-start').textContent='▶ Démarrer';document.getElementById('btn-start').className='btn-g';setStatuses('pa');}
+  else{chronoOn=true;document.getElementById('btn-start').textContent='⏸ Pause';document.getElementById('btn-start').className='btn-r';setStatuses('ec');chronoIv=setInterval(()=>{if(chronoRem>0){chronoRem--;updateChronoDisplay();if(chronoRem===0)endByTime();}},1000);}
 }
-function resetChrono(){
-  clearInterval(chronoIv);chronoOn=false;chronoRem=matchDur;updateChronoDisplay();
-  document.getElementById('btn-start').textContent='▶ Démarrer';
-  document.getElementById('btn-start').className='btn-g';
-  setStatuses('ec');
-}
-function setStatuses(s){
-  ['c1','c2'].forEach(c=>{
-    const won=(c==='c1'?matchWon.c1:matchWon.c2);
-    if(!won){const el=document.getElementById(c+'-status');el.className='mstatus '+(s==='ec'?'ec':s==='pa'?'pa':'fi');el.textContent=s==='ec'?'En cours':s==='pa'?'Pause':'Terminé';}
-  });
-}
+function resetChrono(){clearInterval(chronoIv);chronoOn=false;chronoRem=matchDur;updateChronoDisplay();document.getElementById('btn-start').textContent='▶ Démarrer';document.getElementById('btn-start').className='btn-g';setStatuses('ec');}
+function setStatuses(s){['c1','c2'].forEach(c=>{const won=(c==='c1'?matchWon.c1:matchWon.c2);if(!won){const el=document.getElementById(c+'-status');el.className='mstatus '+(s==='ec'?'ec':s==='pa'?'pa':'fi');el.textContent=s==='ec'?'En cours':s==='pa'?'Pause':'Terminé';}});}
 
-// ===== SCORE =====
-function ap(court,slot,pts){
-  const ck='c'+court;if(matchWon[ck])return;
-  const idx=slot-1; scores[ck][idx]=Math.max(0,scores[ck][idx]+pts);
-  document.getElementById(ck+'-s'+(idx+1)).textContent=scores[ck][idx];
-  if(scores[ck][idx]>=15) endMatch(ck,idx);
-}
-function resetScores(){
-  scores={c1:[0,0],c2:[0,0]};matchWon={c1:false,c2:false};
-  ['c1','c2'].forEach(c=>{
-    [1,2].forEach(t=>{document.getElementById(c+'-s'+t).textContent='0';});
-    document.getElementById(c+'-win').classList.remove('show');
-    const st=document.getElementById(c+'-status');st.className='mstatus ec';st.textContent='En cours';
-  });
-  resetChrono();
-}
+// ══ SCORE ══
+function ap(court,slot,pts){const ck='c'+court;if(matchWon[ck])return;const idx=slot-1;scores[ck][idx]=Math.max(0,scores[ck][idx]+pts);document.getElementById(ck+'-s'+(idx+1)).textContent=scores[ck][idx];if(scores[ck][idx]>=15)endMatch(ck,idx);}
+function resetScores(){scores={c1:[0,0],c2:[0,0]};matchWon={c1:false,c2:false};['c1','c2'].forEach(c=>{[1,2].forEach(t=>{document.getElementById(c+'-s'+t).textContent='0';});document.getElementById(c+'-win').classList.remove('show');const st=document.getElementById(c+'-status');st.className='mstatus ec';st.textContent='En cours';});resetChrono();}
 function endMatch(ck,winIdx){
   matchWon[ck]=true;const loIdx=winIdx===0?1:0;
-  const st=document.getElementById(ck+'-status');st.className='mstatus fi';st.textContent='Terminé';
-  const round=schedules[currentGroup][currentRound];
-  const gi=ck==='c1'?0:1;
+  document.getElementById(ck+'-status').className='mstatus fi';document.getElementById(ck+'-status').textContent='Terminé';
+  const round=schedules[currentGroup][currentRound];const gi=ck==='c1'?0:1;
   if(round&&round.games[gi]){
-    const [a,b]=round.games[gi];const wt=winIdx===0?a:b,lt=winIdx===0?b:a;
+    const[a,b]=round.games[gi];const wt=winIdx===0?a:b,lt=winIdx===0?b:a;
     document.getElementById(ck+'-win').textContent='🏆 '+tLabel(wt)+' remporte le match !';
     document.getElementById(ck+'-win').classList.add('show');
-    const ws=standings[currentGroup].find(s=>s.idx===wt);
-    const ls=standings[currentGroup].find(s=>s.idx===lt);
-    if(ws&&ls){
-      ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;
-      ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;
-      try{localStorage.setItem('rcy_standings',JSON.stringify(standings));}catch(e){}
-    }
+    const ws=standings[currentGroup].find(s=>s.idx===wt);const ls=standings[currentGroup].find(s=>s.idx===lt);
+    if(ws&&ls){ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;save();}
   }
 }
-function endByTime(){
-  clearInterval(chronoIv);chronoOn=false;
-  document.getElementById('btn-start').textContent='▶ Démarrer';
-  document.getElementById('btn-start').className='btn-g';
-  if(!matchWon.c1)endMatch('c1',scores.c1[0]>=scores.c1[1]?0:1);
-  if(!matchWon.c2)endMatch('c2',scores.c2[0]>=scores.c2[1]?0:1);
-}
-
-// ===== LOAD ROUND =====
+function endByTime(){clearInterval(chronoIv);chronoOn=false;document.getElementById('btn-start').textContent='▶ Démarrer';document.getElementById('btn-start').className='btn-g';if(!matchWon.c1)endMatch('c1',scores.c1[0]>=scores.c1[1]?0:1);if(!matchWon.c2)endMatch('c2',scores.c2[0]>=scores.c2[1]?0:1);}
 function loadRound(r){
-  currentRound=r;const sched=schedules[currentGroup];const round=sched[r];if(!round)return;
-  resetScores();
-  const g0=round.games[0],g1=round.games[1]||(round.games[0]);
-  if(g0){setCourtTeams('c1',g0[0],g0[1],r*2+1);}
-  if(g1&&round.games.length>1){setCourtTeams('c2',g1[0],g1[1],r*2+2);}
-  else if(g0){setCourtTeams('c2',g0[0],g0[1],r*2+2);}
+  currentRound=r;const sched=schedules[currentGroup];const round=sched[r];if(!round)return;resetScores();
+  const g0=round.games[0],g1=round.games[1];
+  if(g0)setCourtTeams('c1',g0[0],g0[1],r*2+1);if(g1)setCourtTeams('c2',g1[0],g1[1],r*2+2);
   document.getElementById('arb-disp').textContent=round.refs.map(i=>tLabel(i)).join(' & ')||'—';
-  document.getElementById('mhdr-info').textContent='T1·M'+(r*2+1)+(g0?' — '+tLabel(g0[0])+' vs '+tLabel(g0[1]):'')+'  |  T2·M'+(r*2+2)+(round.games[1]?' — '+tLabel(round.games[1][0])+' vs '+tLabel(round.games[1][1]):'');
+  document.getElementById('mhdr-info').textContent='T1·M'+(r*2+1)+(g0?' — '+tLabel(g0[0])+' vs '+tLabel(g0[1]):'')+' | T2·M'+(r*2+2)+(g1?' — '+tLabel(g1[0])+' vs '+tLabel(g1[1]):'');
   document.getElementById('rinfo-btn').textContent='Round '+(r+1)+'/'+sched.length;
 }
-function setCourtTeams(c,a,b,mn){
-  document.getElementById(c+'-n1').textContent=tLabel(a);
-  document.getElementById(c+'-n2').textContent=tLabel(b);
-  document.getElementById(c+'-d1').style.background=teams[a].color;
-  document.getElementById(c+'-d2').style.background=teams[b].color;
-  document.getElementById(c+'-mnum').textContent='Match '+mn;
-}
+function setCourtTeams(c,a,b,mn){document.getElementById(c+'-n1').textContent=tLabel(a);document.getElementById(c+'-n2').textContent=tLabel(b);document.getElementById(c+'-d1').style.background=teams[a].color;document.getElementById(c+'-d2').style.background=teams[b].color;document.getElementById(c+'-mnum').textContent='Match '+mn;}
 function nextRound(){const s=schedules[currentGroup];if(currentRound<s.length-1)loadRound(currentRound+1);}
 function prevRound(){if(currentRound>0)loadRound(currentRound-1);}
 function toggleFS(){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
 
-// ===== PLANNING =====
+// ══ PLANNING ══
 function addMin(t,m){const[h,mn]=t.split(':').map(Number);const tot=h*60+mn+m;return p2(Math.floor(tot/60)%24)+':'+p2(tot%60);}
 function recalc(){
-  const st=document.getElementById('stime').value||'09:00';
-  const md=parseInt(document.getElementById('mdur').value)||10;
-  const bd=parseInt(document.getElementById('bdur').value)||2;
-  const gi=parseInt(document.getElementById('group-sel').value);
-  const sched=schedules[gi]; matchDur=md*60;
-  if(!chronoOn){chronoRem=matchDur;updateChronoDisplay();}
-  const c=document.getElementById('planning-container'); c.innerHTML='';
-  let cur=st;
+  const st=document.getElementById('stime').value||'09:00';const md=parseInt(document.getElementById('mdur').value)||10;const bd=parseInt(document.getElementById('bdur').value)||2;
+  const gi=parseInt(document.getElementById('group-sel').value);const sched=schedules[gi];matchDur=md*60;if(!chronoOn){chronoRem=matchDur;updateChronoDisplay();}
+  const co=document.getElementById('planning-container');co.innerHTML='';let cur=st;
   sched.forEach((round,ri)=>{
-    const end=addMin(cur,md);
-    const block=document.createElement('div');block.className='round-block';
+    const end=addMin(cur,md);const block=document.createElement('div');block.className='round-block';
     block.innerHTML=`<div class="round-hdr">Round ${ri+1} — ${cur} → ${end}</div>`;
     round.games.forEach((game,gii)=>{
-      const tc=gii===0?'t1r':'t2r',tb=gii===0?'<span class="tbadge t1b">Terrain 1</span>':'<span class="tbadge t2b">Terrain 2</span>';
+      const tc=gii===0?'t1r':'t2r',tb=gii===0?'<span class="tbadge t1b">T1</span>':'<span class="tbadge t2b">T2</span>';
       const row=document.createElement('div');row.className='mrow '+tc;
-      row.innerHTML=`<span class="mtime">${cur}<br><span style="color:#333;font-size:.72rem;">→ ${end}</span></span>
-        <span class="mteam" style="color:${teams[game[0]].color}">${tLabel(game[0])}</span>
-        <span class="mvs">vs</span>
-        <span class="mteam" style="color:${teams[game[1]].color}">${tLabel(game[1])}</span>
-        ${tb}
-        <button class="mlaunch ${currentRound===ri&&currentGroup===gi?'act':''}" onclick="currentGroup=${gi};loadRound(${ri});showView('match')">▶ Lancer</button>`;
+      row.innerHTML=`<span class="mtime">${cur}<br><span style="color:var(--text3);font-size:.7rem;">→${end}</span></span><span class="mteam" style="color:${teams[game[0]].color}">${tLabel(game[0])}</span><span class="mvs">vs</span><span class="mteam" style="color:${teams[game[1]].color}">${tLabel(game[1])}</span>${tb}<button class="mlaunch ${currentRound===ri&&currentGroup===gi?'act':''}" onclick="currentGroup=${gi};loadRound(${ri});showView('match')">▶</button>`;
       block.appendChild(row);
     });
-    if(round.refs.length){
-      const rr=document.createElement('div');rr.className='mrow arbr';
-      rr.innerHTML=`<span class="mtime">${cur}</span><span class="mteam" style="color:#555;">${round.refs.map(i=>tLabel(i)).join(' & ')}</span><span class="mvs">—</span><span style="color:#444;font-size:.82rem;">Arbitrage</span><span class="tbadge" style="background:rgba(80,80,80,.2);color:#555;">Arbitres</span><span></span>`;
-      block.appendChild(rr);
-    }
-    c.appendChild(block);cur=addMin(end,bd);
+    if(round.refs.length){const rr=document.createElement('div');rr.className='mrow arbr';rr.innerHTML=`<span class="mtime">${cur}</span><span class="mteam" style="color:var(--text3);">${round.refs.map(i=>tLabel(i)).join(' & ')}</span><span class="mvs">—</span><span style="color:var(--text3);font-size:.82rem;">Arbitrage</span><span class="tbadge" style="background:var(--gll);color:var(--gd);">Arb.</span><span></span>`;block.appendChild(rr);}
+    co.appendChild(block);cur=addMin(end,bd);
   });
-  const fin=document.createElement('div');fin.innerHTML=`<div class="round-hdr" style="color:var(--al);">Fin estimée : ${cur}</div>`;c.appendChild(fin);
+  const fin=document.createElement('div');fin.innerHTML=`<div class="round-hdr" style="color:var(--am);">Fin estimée : ${cur}</div>`;co.appendChild(fin);
 }
 
-// ===== CLASSEMENT BASKET =====
+// ══ CLASSEMENT BASKET ══
 let displayGroup=0;
-function showGroup(g){
-  displayGroup=g;
-  document.querySelectorAll('.gbtn').forEach((b,i)=>{b.classList.toggle('act',i===g);});
-  renderClassement();
-}
+function showGroup(g){displayGroup=g;document.querySelectorAll('.gbtn').forEach((b,i)=>b.classList.toggle('act',i===g));renderClassement();}
 function renderClassement(){
   const grp=standings[displayGroup];
-  const sorted=[...grp].sort((a,b)=>{
-    if(b.pts!==a.pts)return b.pts-a.pts;
-    const da=a.pf-a.pa,db=b.pf-b.pa;if(db!==da)return db-da;return b.pf-a.pf;
-  });
+  const sorted=[...grp].sort((a,b)=>{if(b.pts!==a.pts)return b.pts-a.pts;const da=a.pf-a.pa,db=b.pf-b.pa;if(db!==da)return db-da;return b.pf-a.pf;});
   const tbody=document.getElementById('ctbl-body');tbody.innerHTML='';
-  sorted.forEach((s,rank)=>{
-    const rc=rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';
-    const diff=s.pf-s.pa;
-    tbody.innerHTML+=`<tr><td class="rk ${rc}">${rank+1}</td><td class="tcell" style="color:${teams[s.idx].color}">${tLabel(s.idx)}</td><td>${s.played}</td><td style="color:#4aad5a">${s.wins}</td><td style="color:#e74c3c">${s.losses}</td><td>${s.pf}</td><td>${s.pa}</td><td style="color:${diff>=0?'#4aad5a':'#e74c3c'}">${diff>0?'+':''}${diff}</td><td><span class="ptsbdg">${s.pts}</span></td></tr>`;
-  });
+  sorted.forEach((s,rank)=>{const rc=rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';const diff=s.pf-s.pa;tbody.innerHTML+=`<tr><td class="rk ${rc}">${rank+1}</td><td class="tcell" style="color:${teams[s.idx].color}">${tLabel(s.idx)}</td><td>${s.played}</td><td style="color:var(--g)">${s.wins}</td><td style="color:var(--rd)">${s.losses}</td><td>${s.pf}</td><td>${s.pa}</td><td style="color:${diff>=0?'var(--g)':'var(--rd)'}">${diff>0?'+':''}${diff}</td><td><span class="ptsbdg">${s.pts}</span></td></tr>`;});
 }
 
-// ===== ATHLÉ =====
+// ══ ATHLÉ ══
 function buildAthleGrid(){
   const grid=document.getElementById('ath-grid');grid.innerHTML='';
   for(let i=0;i<12;i++){
     const members=elevesByTeam(i);
-    // Sync athle jumps with current eleve list
-    athleData[i].jumps=members.map(e=>{
-      const existing=athleData[i].jumps.find(j=>j.id===e.id);
-      return{id:e.id,prenom:e.prenom,dist:existing?existing.dist:''};
-    });
+    athleData[i].jumps=members.map(e=>{const ex=athleData[i].jumps.find(j=>j.id===e.id);return{id:e.id,prenom:e.prenom,dist:ex?ex.dist:''};});
     const card=document.createElement('div');card.className='ath-card';
-    card.innerHTML=`
-      <div class="ath-card-hdr"><div class="ath-dot" style="background:${teams[i].color}"></div><div class="ath-card-title">${tLabel(i)}</div></div>
+    card.innerHTML=`<div class="ath-card-hdr"><div class="ath-dot" style="background:${teams[i].color}"></div><div class="ath-card-title">${tLabel(i)}</div></div>
       <div class="ath-section">Relais 6×100m — temps (s)</div>
-      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;">
-        <label style="font-size:.82rem;color:#888;min-width:70px;">Temps (s)</label>
-        <input type="number" id="relay-${i}" value="${athleData[i].relay||''}" placeholder="ex: 87.5" step="0.1" min="0" style="background:#222;border:1px solid #333;color:#fff;padding:.2rem .4rem;border-radius:4px;font-size:.85rem;width:90px;text-align:center;">
-      </div>
-      <div class="ath-section">Saut en longueur — meilleur saut par athlète (cm)</div>
-      ${members.map((e,j)=>`
-        <div class="ath-athlete-row">
-          <div class="ath-athlete-name">${e.prenom} <span style="color:#444;">${e.classe}</span></div>
-          <input type="number" id="jump-${i}-${e.id}" value="${(athleData[i].jumps.find(j=>j.id===e.id)||{dist:''}).dist}" placeholder="cm" min="0" max="700">
-        </div>`).join('')}
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;"><label style="font-size:.82rem;color:var(--text3);min-width:70px;">Temps (s)</label><input class="ath-relay-input" type="number" id="relay-${i}" value="${athleData[i].relay||''}" placeholder="ex: 87.5" step="0.1" min="0" style="width:90px;"></div>
+      <div class="ath-section">Saut en longueur — meilleur saut (cm)</div>
+      ${members.map(e=>`<div class="ath-athlete-row"><div class="ath-athlete-name">${e.prenom} <span style="color:var(--text3);">${e.classe}</span></div><input type="number" id="jump-${i}-${e.id}" value="${(athleData[i].jumps.find(j=>j.id===e.id)||{dist:''}).dist}" placeholder="cm" min="0" max="700"></div>`).join('')}
       <button class="ath-save-btn" onclick="saveAthle(${i})">💾 Enregistrer</button>`;
     grid.appendChild(card);
   }
@@ -648,169 +635,139 @@ function saveAthle(i){
   athleData[i].relay=document.getElementById('relay-'+i).value;
   const members=elevesByTeam(i);
   athleData[i].jumps=members.map(e=>({id:e.id,prenom:e.prenom,dist:(document.getElementById('jump-'+i+'-'+e.id)||{value:''}).value||''}));
-  try{localStorage.setItem('rcy_athle',JSON.stringify(athleData));}catch(e){}
+  save();
 }
 function calcAthle(){for(let i=0;i<12;i++)saveAthle(i);}
 function showAthleGroup(g){
   const grpIdx=g===0?GROUP_A:GROUP_B;
-  const rows=grpIdx.map(i=>{
-    const relay=parseFloat(athleData[i].relay)||Infinity;
-    const totalJump=athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0),0);
-    return{idx:i,relay,totalJump};
-  });
+  const rows=grpIdx.map(i=>{const relay=parseFloat(athleData[i].relay)||Infinity;const totalJump=athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0),0);return{idx:i,relay,totalJump};});
   const rr=[...rows].sort((a,b)=>a.relay-b.relay);rr.forEach((r,ri)=>{rows.find(x=>x.idx===r.idx).relayRank=ri+1;});
   const jr=[...rows].sort((a,b)=>b.totalJump-a.totalJump);jr.forEach((r,ri)=>{rows.find(x=>x.idx===r.idx).jumpRank=ri+1;});
   rows.forEach(r=>{r.athPts=r.relayRank+r.jumpRank;});rows.sort((a,b)=>a.athPts-b.athPts);
   const tbody=document.getElementById('ath-ctbl');tbody.innerHTML='';
-  rows.forEach((r,rank)=>{
-    const rc=rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';
-    tbody.innerHTML+=`<tr><td class="rk ${rc}">${rank+1}</td><td class="tcell" style="color:${teams[r.idx].color}">${tLabel(r.idx)}</td><td>${r.relay===Infinity?'—':r.relay.toFixed(2)+' s'}</td><td>${r.relayRank}</td><td>${r.totalJump>0?r.totalJump+' cm':'—'}</td><td>${r.jumpRank}</td><td><span class="ptsbdg">${r.athPts}</span></td></tr>`;
-  });
+  rows.forEach((r,rank)=>{const rc=rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';tbody.innerHTML+=`<tr><td class="rk ${rc}">${rank+1}</td><td class="tcell" style="color:${teams[r.idx].color}">${tLabel(r.idx)}</td><td>${r.relay===Infinity?'—':r.relay.toFixed(2)+' s'}</td><td>${r.relayRank}</td><td>${r.totalJump>0?r.totalJump+' cm':'—'}</td><td>${r.jumpRank}</td><td><span class="ptsbdg">${r.athPts}</span></td></tr>`;});
 }
 
-// ===== CLASSEMENT FINAL =====
-function buildBonusGrid(){
-  const grid=document.getElementById('bonus-grid');grid.innerHTML='';
-  for(let i=0;i<12;i++){
-    const div=document.createElement('div');div.style.cssText='display:flex;align-items:center;gap:.5rem;';
-    div.innerHTML=`<div style="width:10px;height:10px;border-radius:50%;background:${teams[i].color};flex-shrink:0;"></div>
-      <span style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;color:#aaa;min-width:85px;">${tLabel(i)}</span>
-      <input type="number" id="bonus-${i}" value="${bonusEcolo[i]}" min="0" max="10" step="1" style="background:#222;border:1px solid #333;color:#fff;padding:.2rem .4rem;border-radius:4px;font-size:.85rem;width:55px;text-align:center;">
-      <span style="font-size:.72rem;color:#555;">pts</span>`;
-    grid.appendChild(div);
-  }
+// ══ ÉCOLO TABLE ══
+function buildEcoTable(){
+  const tbl=document.getElementById('eco-tbl');
+  // Header row : geste | Éq1 | Éq2 … Éq12
+  let html=`<thead><tr><th class="geste-col cat-col">Geste écolo</th>`;
+  for(let i=0;i<12;i++) html+=`<th style="color:${teams[i].color};background:var(--gll);">${tLabel(i)}</th>`;
+  html+=`<th>Total</th></tr></thead><tbody>`;
+
+  // Regrouper par catégorie
+  const cats={};GESTES.forEach(g=>{if(!cats[g.cat])cats[g.cat]=[];cats[g.cat].push(g);});
+  Object.entries(cats).forEach(([cat,gestes])=>{
+    // ligne catégorie
+    html+=`<tr><td class="cat-label" colspan="${14}">${cat}</td></tr>`;
+    gestes.forEach(g=>{
+      html+=`<tr><td class="geste-txt">${g.ico} ${g.txt}</td>`;
+      for(let i=0;i<12;i++){
+        const done=!!(ecoChecks[i]&&ecoChecks[i][g.id]);
+        html+=`<td class="eco-chk-cell" onclick="toggleGeste(${i},'${g.id}')"><div class="eco-chk-box ${done?'done':''}">${done?'✓':''}</div></td>`;
+      }
+      html+=`<td></td></tr>`;
+    });
+  });
+
+  // Ligne totaux
+  html+=`<tr class="eco-tbl-total"><td class="geste-txt" style="background:var(--gll);font-weight:800;">🌿 Total points écolo</td>`;
+  for(let i=0;i<12;i++) html+=`<td class="eco-score-cell" id="eco-total-${i}">${ecoScore(i)}</td>`;
+  html+=`<td></td></tr>`;
+
+  html+=`</tbody>`;
+  tbl.innerHTML=html;
 }
+
+function toggleGeste(teamIdx,gesteId){
+  if(!ecoChecks[teamIdx])ecoChecks[teamIdx]={};
+  ecoChecks[teamIdx][gesteId]=!ecoChecks[teamIdx][gesteId];
+  save();
+  // Update juste la cellule cliquée + le total
+  buildEcoTable(); // rebuild simple — table est petite
+}
+
+// ══ CLASSEMENT FINAL ══
 function calcFinal(){
-  for(let i=0;i<12;i++){const v=document.getElementById('bonus-'+i);if(v)bonusEcolo[i]=parseInt(v.value)||0;}
-  try{localStorage.setItem('rcy_bonus',JSON.stringify(bonusEcolo));}catch(e){}
-  for(let i=0;i<12;i++)saveAthle(i);
   const basketRankMap={};
-  [0,1].forEach(g=>{
-    const sorted=[...standings[g]].sort((a,b)=>{if(b.pts!==a.pts)return b.pts-a.pts;const da=a.pf-a.pa,db=b.pf-b.pa;if(db!==da)return db-da;return b.pf-a.pf;});
-    sorted.forEach((s,ri)=>{basketRankMap[s.idx]={rank:ri+1,pts:s.pts};});
-  });
+  [0,1].forEach(g=>{const sorted=[...standings[g]].sort((a,b)=>{if(b.pts!==a.pts)return b.pts-a.pts;const da=a.pf-a.pa,db=b.pf-b.pa;if(db!==da)return db-da;return b.pf-a.pf;});sorted.forEach((s,ri)=>{basketRankMap[s.idx]={rank:ri+1,pts:s.pts};});});
   const athleRankMap={};
-  [GROUP_A,GROUP_B].forEach(grpIdx=>{
-    const rows=grpIdx.map(i=>{const relay=parseFloat(athleData[i].relay)||Infinity;const totalJump=athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0),0);return{idx:i,relay,totalJump};});
-    const rr=[...rows].sort((a,b)=>a.relay-b.relay);rr.forEach((r,ri)=>{rows.find(x=>x.idx===r.idx).relayRank=ri+1;});
-    const jr=[...rows].sort((a,b)=>b.totalJump-a.totalJump);jr.forEach((r,ri)=>{rows.find(x=>x.idx===r.idx).jumpRank=ri+1;});
-    rows.forEach(r=>{athleRankMap[r.idx]={rank:r.relayRank+r.jumpRank};});
-  });
-  const all=Array.from({length:12},(_,i)=>{
-    const bk=basketRankMap[i]||{rank:6,pts:0};const at=athleRankMap[i]||{rank:12};const bonus=bonusEcolo[i]||0;
-    return{idx:i,bkRank:bk.rank,bkPts:bk.pts,atRank:at.rank,bonus,total:bk.rank+at.rank-bonus};
-  });
+  [GROUP_A,GROUP_B].forEach(grpIdx=>{const rows=grpIdx.map(i=>{const relay=parseFloat(athleData[i].relay)||Infinity;const totalJump=athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0),0);return{idx:i,relay,totalJump};});const rr=[...rows].sort((a,b)=>a.relay-b.relay);rr.forEach((r,ri)=>{rows.find(x=>x.idx===r.idx).relayRank=ri+1;});const jr=[...rows].sort((a,b)=>b.totalJump-a.totalJump);jr.forEach((r,ri)=>{rows.find(x=>x.idx===r.idx).jumpRank=ri+1;});rows.forEach(r=>{athleRankMap[r.idx]={rank:r.relayRank+r.jumpRank};});});
+  const all=Array.from({length:12},(_,i)=>{const bk=basketRankMap[i]||{rank:6,pts:0};const at=athleRankMap[i]||{rank:12};const eco=ecoScore(i);return{idx:i,bkRank:bk.rank,atRank:at.rank,eco,total:bk.rank+at.rank-eco};});
   all.sort((a,b)=>a.total-b.total);
   const tbody=document.getElementById('final-body');tbody.innerHTML='';
-  all.forEach((r,rank)=>{
-    const rc=rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';
-    tbody.innerHTML+=`<tr><td class="rk ${rc}">${rank+1}</td><td class="tcell" style="color:${teams[r.idx].color}">${tLabel(r.idx)}</td><td>${r.bkRank}e</td><td>${r.bkPts}</td><td>${r.atRank}</td><td style="color:${r.bonus>0?'#4aad5a':'#555'}">+${r.bonus}</td><td><span class="ptsbdg ptsbdg-fin">${r.total}</span></td></tr>`;
-  });
+  all.forEach((r,rank)=>{const rc=rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';
+    tbody.innerHTML+=`<tr><td class="rk ${rc}">${rank+1}</td><td class="tcell" style="color:${teams[r.idx].color}">${tLabel(r.idx)}</td><td>${r.bkRank}e</td><td>${r.atRank}</td><td style="color:${r.eco>0?'var(--g)':'var(--text3)'}"><strong>−${r.eco} pts</strong></td><td><span class="ptsbdg ptsbdg-fin">${r.total}</span></td></tr>`;});
 }
 
-// ===== ÉQUIPES — édition avec échange =====
+// ══ ÉQUIPES ══
 function buildEquipesPage(){
   const grid=document.getElementById('eq-grid');grid.innerHTML='';
-  // Options pour le select de changement d'équipe
-  const teamOptions=teams.map((t,i)=>`<option value="${i}">${t.name}</option>`).join('');
-
   for(let eq=0;eq<12;eq++){
-    const members=elevesByTeam(eq);
-    const card=document.createElement('div');card.className='eq-card';
-    const dotStyle=`background:${teams[eq].color};`;
-    const nomLabel=teams[eq].nom?` — ${teams[eq].nom}`:'';
-    card.innerHTML=`
-      <div class="eq-card-hdr">
-        <div class="eq-card-dot" style="${dotStyle}"></div>
-        <div>
-          <div class="eq-card-title">${teams[eq].name}${nomLabel}</div>
-          <div class="eq-card-subtitle">${members.length} élève${members.length>1?'s':''}</div>
-        </div>
+    const members=elevesByTeam(eq);const card=document.createElement('div');card.className='eq-card';
+    card.innerHTML=`<div class="eq-card-hdr"><div class="eq-card-dot" style="background:${teams[eq].color};"></div><div style="flex:1;"><div class="eq-card-title">${teams[eq].name}</div><div class="eq-card-subtitle">${members.length} élève${members.length>1?'s':''}</div></div></div>
+      <div style="margin-bottom:.7rem;">
+        <label style="display:block;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g);margin-bottom:.25rem;">🌿 Nom d'équipe écolo</label>
+        <input type="text" id="enom-${eq}" value="${teams[eq].nom||''}" placeholder="Ex : Les Pandas Verts, Team Compost…" style="width:100%;background:#f5fbf5;border:1.5px solid var(--g3);color:var(--gd);padding:.35rem .6rem;border-radius:6px;font-size:.92rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;">
       </div>
-      ${members.map(e=>`
-        <div class="eleve-row" id="erow-${e.id}">
-          <input class="eleve-inp" type="text" id="ep-${e.id}" value="${e.prenom}" placeholder="Prénom" title="Modifier le prénom">
-          <select class="eleve-sel" id="es-${e.id}" title="Changer d'équipe">
-            ${teams.map((t,i)=>`<option value="${i}"${e.eq===i?' selected':''}>${t.name}</option>`).join('')}
-          </select>
-          <span class="eleve-cls">${e.classe}</span>
-        </div>`).join('')}
-    `;
+      <div style="border-top:1px solid var(--gll);padding-top:.5rem;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.3rem;">Élèves</div>
+        ${members.map(e=>`<div class="eleve-row"><input class="eleve-inp" type="text" id="ep-${e.id}" value="${e.prenom}" placeholder="Prénom"><select class="eleve-sel" id="es-${e.id}">${teams.map((t,i)=>`<option value="${i}"${e.eq===i?' selected':''}>${t.name}</option>`).join('')}</select><span class="eleve-cls">${e.classe}</span></div>`).join('')}
+      </div>`;
     grid.appendChild(card);
   }
 }
-
 function saveAllEleves(){
-  // Lire tous les champs
-  eleves.forEach(e=>{
-    const inp=document.getElementById('ep-'+e.id);
-    const sel=document.getElementById('es-'+e.id);
-    if(inp) e.prenom=inp.value.trim()||e.prenom;
-    if(sel) e.eq=parseInt(sel.value);
-  });
-  try{localStorage.setItem('rcy_eleves',JSON.stringify(eleves));}catch(e){}
-  // Rebuild athle jumps list
-  for(let i=0;i<12;i++){
-    const members=elevesByTeam(i);
-    athleData[i].jumps=members.map(e=>{
-      const ex=athleData[i].jumps.find(j=>j.id===e.id);
-      return{id:e.id,prenom:e.prenom,dist:ex?ex.dist:''};
-    });
-  }
-  try{localStorage.setItem('rcy_athle',JSON.stringify(athleData));}catch(e){}
-  buildEquipesPage();
-  // Confirmation visuelle
-  const btn=document.querySelector('.eq-save-all-btn');
-  const orig=btn.textContent;btn.textContent='✓ Enregistré !';btn.style.background='var(--g)';btn.style.color='#fff';
-  setTimeout(()=>{btn.textContent=orig;btn.style.background='';btn.style.color='';},1500);
+  for(let eq=0;eq<12;eq++){const n=document.getElementById('enom-'+eq);if(n)teams[eq].nom=n.value.trim();}
+  eleves.forEach(e=>{const inp=document.getElementById('ep-'+e.id);const sel=document.getElementById('es-'+e.id);if(inp)e.prenom=inp.value.trim()||e.prenom;if(sel)e.eq=parseInt(sel.value);});
+  for(let i=0;i<12;i++){const members=elevesByTeam(i);athleData[i].jumps=members.map(e=>{const ex=athleData[i].jumps.find(j=>j.id===e.id);return{id:e.id,prenom:e.prenom,dist:ex?ex.dist:''};});}
+  save();buildEquipesPage();
+  const btn=document.querySelector('.btn-main');const orig=btn.textContent;btn.textContent='✓ Enregistré !';btn.style.background='var(--gd)';setTimeout(()=>{btn.textContent=orig;btn.style.background='';},1800);
 }
 
-// ===== CONFIG =====
+// ══ CONFIG ══
 function buildConfigGrid(){
   const grid=document.getElementById('cfg-grid');grid.innerHTML='';
-  teams.forEach((t,i)=>{
-    const card=document.createElement('div');card.className='cfg-card';
-    card.innerHTML=`
-      <label>Éq.${i+1}</label>
-      <input type="text" id="cfg-name-${i}" value="${t.name}" placeholder="Nom court" style="width:85px;">
-      <input type="text" class="cfg-nom" id="cfg-nom-${i}" value="${t.nom||''}" placeholder="Nom d'équipe (ex: Les Tigres)" style="width:150px;">
-      <input type="color" id="cfg-color-${i}" value="${t.color}">`;
-    grid.appendChild(card);
-  });
+  teams.forEach((t,i)=>{const card=document.createElement('div');card.className='cfg-card';card.innerHTML=`<label>Éq.${i+1}</label><input type="text" id="cfg-name-${i}" value="${t.name}" placeholder="Nom court" style="width:80px;"><input type="text" class="cfg-nom" id="cfg-nom-${i}" value="${t.nom||''}" placeholder="Nom écolo…" style="width:140px;"><input type="color" id="cfg-color-${i}" value="${t.color}">`;grid.appendChild(card);});
 }
 function applyConfig(){
-  teams.forEach((t,i)=>{
-    t.name=document.getElementById('cfg-name-'+i).value||('Équipe '+(i+1));
-    t.nom=document.getElementById('cfg-nom-'+i).value||'';
-    t.color=document.getElementById('cfg-color-'+i).value;
-  });
-  try{localStorage.setItem('rcy_teams',JSON.stringify(teams));}catch(e){}
-  loadRound(currentRound);recalc();renderClassement();buildEquipesPage();buildAthleGrid();buildBonusGrid();buildConfigGrid();
+  teams.forEach((t,i)=>{t.name=document.getElementById('cfg-name-'+i).value||('Équipe '+(i+1));t.nom=document.getElementById('cfg-nom-'+i).value||'';t.color=document.getElementById('cfg-color-'+i).value;});
+  save();loadRound(currentRound);recalc();renderClassement();buildEquipesPage();buildAthleGrid();buildEcoTable();buildConfigGrid();
 }
 
-// ===== NAV =====
+// ══ NAV ══
+const VIEW_MAP={match:0,planning:1,classement:2,athle:3,ecolo:4,final:5,'regles-basket':6,equipes:7,config:8};
 function showView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-  document.getElementById('view-'+v).classList.add('active');
-  const map={match:0,planning:1,classement:2,athle:3,final:4,regles:5,equipes:6,config:7};
-  document.querySelectorAll('nav button')[map[v]].classList.add('active');
+  const el=document.getElementById('view-'+v);if(el)el.classList.add('active');
+  const idx=VIEW_MAP[v];if(idx!==undefined)document.querySelectorAll('nav button')[idx].classList.add('active');
   if(v==='planning')recalc();
   if(v==='classement')renderClassement();
   if(v==='athle')buildAthleGrid();
-  if(v==='final'){buildBonusGrid();calcFinal();}
+  if(v==='ecolo')buildEcoTable();
+  if(v==='final')calcFinal();
   if(v==='equipes')buildEquipesPage();
   if(v==='config')buildConfigGrid();
 }
 
-// ===== INIT =====
+// ══ INIT ══
+function initFirebase(){
+  if(!window._fbOn) return;
+  window._fbOn('standings', v=>{standings=v;renderClassement();});
+  window._fbOn('eco',       v=>{ecoChecks=v;const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable();});
+  window._fbOn('athle',     v=>{athleData=v;});
+  window._fbOn('teams',     v=>{teams=v;loadRound(currentRound);});
+  window._fbOn('eleves',    v=>{eleves=v;});
+  setSyncDot('ok');
+}
+window.addEventListener('fb-ready', ()=>{ setTimeout(initFirebase, 300); });
+
 function init(){
-  try{const s=localStorage.getItem('rcy_standings');if(s)standings=JSON.parse(s);}catch(e){}
-  [0,1].forEach(g=>{
-    const grpIdx=g===0?GROUP_A:GROUP_B;
-    standings[g]=grpIdx.map(i=>standings[g].find(s=>s.idx===i)||{idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});
-  });
-  loadRound(0);updateChronoDisplay();renderClassement();
+  [0,1].forEach(g=>{const grpIdx=g===0?GROUP_A:GROUP_B;standings[g]=grpIdx.map(i=>(standings[g]||[]).find(s=>s.idx===i)||{idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});});
+  buildSplash();
+  loadRound(0);updateChronoDisplay();
 }
 init();
 </script>
