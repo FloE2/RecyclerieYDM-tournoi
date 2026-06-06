@@ -1076,7 +1076,7 @@ function initFirebase(){
   window._fbOn('gestes',   v=>{ gestesData=v; GESTES.length=0; v.forEach(g=>GESTES.push(g)); localStorage.setItem('rcy_gestes',JSON.stringify(v)); buildSplash(); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
   setSyncDot('ok');
 }
-window.addEventListener('fb-ready',, ()=>{ setTimeout(initFirebase, 300); });
+window.addEventListener('fb-ready', ()=>{ setTimeout(initFirebase, 300); });
 
 function init(){
   // Normalise standings depuis cache
