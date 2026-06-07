@@ -389,9 +389,9 @@ nav button:active{cursor:grabbing;}
       <div class="mhdr-title" id="mhdr-info">Terrain 1 · Match 1 | Terrain 2 · Match 2</div>
     </div>
     <div class="mhdr-ctrl">
-      <button class="btn-a" onclick="resetScores()">Reset scores</button>
+      <button class="btn-a" onclick="safeResetScores()">Reset scores</button>
       <button class="btn-g" id="btn-start" onclick="toggleChrono()">▶ Démarrer</button>
-      <button onclick="resetChrono()">Reset chrono</button>
+      <button onclick="safeResetChrono()">Reset chrono</button>
       <div style="display:flex;align-items:center;gap:3px;">
         <button onclick="adjustDur(-1)" style="font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:900;border:1px solid rgba(100,200,80,.3);background:rgba(30,80,30,.6);color:#c0e0a0;padding:.15rem .5rem;border-radius:4px;cursor:pointer;line-height:1;touch-action:manipulation;">−</button>
         <input type="number" id="dur-input" value="10" min="1" max="60" step="1"
@@ -754,88 +754,121 @@ function setStatuses(s){['c1','c2'].forEach(c=>{const won=(c==='c1'?matchWon.c1:
 
 // ══ SCORE ══
 function ap(court,slot,pts){const ck='c'+court;if(matchWon[ck])return;const idx=slot-1;scores[ck][idx]=Math.max(0,scores[ck][idx]+pts);document.getElementById(ck+'-s'+(idx+1)).textContent=scores[ck][idx];if(scores[ck][idx]>=15)endMatch(ck,idx);}
-function resetScores(full=true){
-  if(full){
-    // Remise à zéro complète (reset manuel)
-    scores={c1:[0,0],c2:[0,0]};matchWon={c1:false,c2:false};
-    ['c1','c2'].forEach(c=>{
-      [1,2].forEach(t=>document.getElementById(c+'-s'+t).textContent='0');
-      document.getElementById(c+'-win').classList.remove('show');
-      const st=document.getElementById(c+'-status');st.className='mstatus ec';st.textContent='En cours';
-      ['s1','s2'].forEach(s=>{const el=document.getElementById(c+'-'+s);if(el){el.style.opacity='';el.style.pointerEvents='';}});
-    });
-    resetChrono();
-  } else {
-    // Chargement d'un round : restaurer l'état des matchs déjà joués
-    scores={c1:[0,0],c2:[0,0]};matchWon={c1:false,c2:false};
-    ['c1','c2'].forEach(c=>{
-      const mk=currentGroup+'-'+currentRound+'-'+c;
-      if(_matchScored[mk]){
-        matchWon[c]=true;
-        // Retrouver le score dans l'historique
-        const courtNum=c==='c1'?1:2;
-        const hist=(Array.isArray(matchHistory[currentGroup])?matchHistory[currentGroup]:[])
-          .filter(m=>m.round===currentRound+1&&m.court===courtNum)
-          .sort((a,b)=>b.sA+b.sB-(a.sA+a.sB))[0]; // dernier enregistré
-        if(hist){
-          scores[c][0]=hist.sA;scores[c][1]=hist.sB;
-          document.getElementById(c+'-s1').textContent=hist.sA;
-          document.getElementById(c+'-s2').textContent=hist.sB;
-          document.getElementById(c+'-win').textContent='🏆 '+tLabel(hist.winner)+' remporte le match !';
-          document.getElementById(c+'-win').classList.add('show');
-        }
-        const st=document.getElementById(c+'-status');st.className='mstatus fi';st.textContent='Terminé';
-        // Bloquer les boutons
-        ['s1','s2'].forEach(s=>{const el=document.getElementById(c+'-'+s);if(el){el.style.opacity='.35';el.style.pointerEvents='none';}});
-      } else {
-        [1,2].forEach(t=>document.getElementById(c+'-s'+t).textContent='0');
-        document.getElementById(c+'-win').classList.remove('show');
-        const st=document.getElementById(c+'-status');st.className='mstatus ec';st.textContent='En cours';
-        ['s1','s2'].forEach(s=>{const el=document.getElementById(c+'-'+s);if(el){el.style.opacity='';el.style.pointerEvents='';}});
-      }
-    });
+function safeResetScores(){
+  // Bloquer le reset si le round courant est terminé (matchs verrouillés)
+  if(isRoundComplete(currentRound)){
+    alert("Ce round est terminé — les scores sont verrouillés.\nPour corriger une erreur, utilise l'onglet Classement basket > Corriger un score.");
+    return;
   }
+  // Bloquer aussi si au moins un match est joué dans ce round
+  const c1done = !!_matchScored[currentGroup+'-'+currentRound+'-c1'];
+  const c2done = !!_matchScored[currentGroup+'-'+currentRound+'-c2'];
+  if(c1done || c2done){
+    alert("Au moins un match de ce round est terminé — impossible de tout remettre à zéro.\nPour corriger, va dans Classement basket > Corriger un score.");
+    return;
+  }
+  resetScores();
+}
+
+function safeResetChrono(){
+  // Le chrono peut être reset même si un match est joué (l'autre terrain peut encore jouer)
+  // Mais on ne remet pas à zéro si LES DEUX matchs sont joués
+  if(isRoundComplete(currentRound)){
+    alert("Ce round est terminé.");
+    return;
+  }
+  resetChrono();
+}
+
+function resetScores(){
+  // Remise à zéro complète de l'affichage du match en cours
+  scores={c1:[0,0],c2:[0,0]};
+  matchWon={c1:false,c2:false};
+  ['c1','c2'].forEach(c=>{
+    [1,2].forEach(t=>{ const el=document.getElementById(c+'-s'+t); if(el) el.textContent='0'; });
+    const win=document.getElementById(c+'-win'); if(win) win.classList.remove('show');
+    const st=document.getElementById(c+'-status');
+    if(st){ st.className='mstatus ec'; st.textContent='En cours'; }
+    // Débloquer les boutons
+    ['s1','s2'].forEach(s=>{ const el=document.getElementById(c+'-'+s); if(el){ el.style.opacity=''; el.style.pointerEvents=''; }});
+  });
+  resetChrono();
 }
 // Matchs déjà joués — persisté sur Firebase (survit aux rechargements)
 // Format: {"0-0-c1": true, "0-0-c2": true, ...} (groupe-round-court)
+// _matchScored already declared above
+
+// ── Matchs joués (persisté Firebase + localStorage) ──
 let _matchScored = JSON.parse(localStorage.getItem('rcy_scored')||'{}');
 
-function endMatch(ck,winIdx){
-  matchWon[ck]=true;const loIdx=winIdx===0?1:0;
-  document.getElementById(ck+'-status').className='mstatus fi';
-  document.getElementById(ck+'-status').textContent='Terminé';
-  const round=schedules[currentGroup][currentRound];const gi=ck==='c1'?0:1;
-  if(round&&round.games[gi]){
-    const[a,b]=round.games[gi];const wt=winIdx===0?a:b,lt=winIdx===0?b:a;
-    document.getElementById(ck+'-win').textContent='🏆 '+tLabel(wt)+' remporte le match !';
-    document.getElementById(ck+'-win').classList.add('show');
+function getMatchFromHistory(roundIdx, courtNum){
+  const hist = Array.isArray(matchHistory[currentGroup]) ? matchHistory[currentGroup] : [];
+  // Chercher le dernier résultat pour ce round/terrain
+  const matches = hist.filter(m=>m.round===roundIdx+1 && m.court===courtNum);
+  return matches.length ? matches[matches.length-1] : null;
+}
 
-    // ── Clé unique pour ce match (groupe + round + court) ──
-    const matchKey = currentGroup+'-'+currentRound+'-'+ck;
-    if(_matchScored[matchKey]){
-      // Déjà joué — affichage seulement, pas de double comptage
-      return;
-    }
-    _matchScored[matchKey] = true;
-    localStorage.setItem('rcy_scored', JSON.stringify(_matchScored));
-    if(window._fbSet) window._fbSet('scored', _matchScored);
+function isRoundComplete(r){
+  const round = schedules[currentGroup][r];
+  if(!round) return false;
+  return round.games.every((_,gi)=>!!_matchScored[currentGroup+'-'+r+'-c'+(gi+1)]);
+}
 
-    const ws=standings[currentGroup].find(s=>s.idx===wt);
-    const ls=standings[currentGroup].find(s=>s.idx===lt);
-    if(ws&&ls){
-      ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;
-      ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;
-      // Historique
-      if(!matchHistory||!Array.isArray(matchHistory)){matchHistory=[[],[]];}
-      if(!matchHistory[currentGroup]) matchHistory[currentGroup]=[];
-      matchHistory[currentGroup].push({
-        round:currentRound+1, court:ck==='c1'?1:2,
-        tA:wt, tB:lt, sA:scores[ck][winIdx], sB:scores[ck][loIdx], winner:wt
-      });
-      localStorage.setItem('rcy_history',JSON.stringify(matchHistory));
-      save();
-    }
+function endMatch(ck, winIdx){
+  const matchKey = currentGroup+'-'+currentRound+'-'+ck;
+
+  // Clé unique : bloquer le double enregistrement
+  if(_matchScored[matchKey]) return;
+
+  matchWon[ck] = true;
+  const loIdx = winIdx===0?1:0;
+
+  // Affichage "Terminé"
+  const st=document.getElementById(ck+'-status');
+  if(st){st.className='mstatus fi'; st.textContent='Terminé';}
+
+  // Bloquer les boutons score
+  ['s1','s2'].forEach(s=>{ const el=document.getElementById(ck+'-'+s); if(el){el.style.opacity='.35';el.style.pointerEvents='none';}});
+
+  const round = schedules[currentGroup][currentRound];
+  const gi = ck==='c1'?0:1;
+  if(!round||!round.games[gi]) return;
+
+  const [a,b] = round.games[gi];
+  const wt = winIdx===0?a:b, lt = winIdx===0?b:a;
+
+  // Bannière victoire
+  const winEl=document.getElementById(ck+'-win');
+  if(winEl){winEl.textContent='🏆 '+tLabel(wt)+' remporte le match !'; winEl.classList.add('show');}
+
+  // Enregistrer la clé
+  _matchScored[matchKey] = true;
+  localStorage.setItem('rcy_scored', JSON.stringify(_matchScored));
+
+  // Mise à jour classement
+  const ws=standings[currentGroup].find(s=>s.idx===wt);
+  const ls=standings[currentGroup].find(s=>s.idx===lt);
+  if(ws&&ls){
+    ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;
+    ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;
   }
+
+  // Historique
+  if(!Array.isArray(matchHistory[currentGroup])) matchHistory[currentGroup]=[];
+  matchHistory[currentGroup].push({
+    round:currentRound+1, court:ck==='c1'?1:2,
+    tA:wt, tB:lt, sA:scores[ck][winIdx], sB:scores[ck][loIdx], winner:wt
+  });
+
+  // Sauvegarder (localStorage + Firebase)
+  localStorage.setItem('rcy_history', JSON.stringify(matchHistory));
+  localStorage.setItem('rcy_standings', JSON.stringify(standings));
+  save();
+
+  // Mettre à jour le badge round
+  const done=isRoundComplete(currentRound);
+  const rbig=document.getElementById('round-big');
+  if(rbig){rbig.textContent=(done?'🔒 ':'')+'ROUND '+(currentRound+1)+' / '+schedules[currentGroup].length; rbig.style.color=done?'#f0c060':'#a0e848';}
 }
 function endByTime(){
   clearInterval(chronoIv);chronoOn=false;
@@ -845,41 +878,70 @@ function endByTime(){
   if(!matchWon.c2)endMatch('c2',scores.c2[0]>=scores.c2[1]?0:1);
 }
 function loadRound(r){
-  currentRound=r;const sched=schedules[currentGroup];const round=sched[r];if(!round)return;
-  resetScores(false);
-  const g0=round.games[0],g1=round.games[1];
-  if(g0)setCourtTeams('c1',g0[0],g0[1],r*2+1);if(g1)setCourtTeams('c2',g1[0],g1[1],r*2+2);
-  // Arbitre par terrain — affichage dans chaque demi-écran
-  const ng = round.games.length;
-  const refs = round.refs;
-  const arb1El = document.getElementById('c1-arb-name');
-  const arb2El = document.getElementById('c2-arb-name');
-  if(refs.length === 0){
-    if(arb1El){ arb1El.textContent='—'; arb1El.className='court-arb-name'; }
-    if(arb2El){ arb2El.textContent='—'; arb2El.className='court-arb-name'; }
-  } else if(refs.length === 1){
-    if(arb1El){ arb1El.textContent=tLabel(refs[0]); arb1El.className='court-arb-name'; }
-    if(arb2El){ arb2El.textContent=tLabel(refs[0]); arb2El.className='court-arb-name'; }
-  } else if(refs.length === 2){
-    // 1 arbitre par terrain
-    if(arb1El){ arb1El.textContent=tLabel(refs[0]); arb1El.className='court-arb-name'; }
-    if(arb2El){ arb2El.textContent=tLabel(refs[1]); arb2El.className='court-arb-name'; }
+  currentRound = r;
+  const sched = schedules[currentGroup];
+  const round = sched[r];
+  if(!round) return;
+
+  // 1. Reset affichage
+  resetScores();
+
+  // 2. Équipes et arbitres
+  const g0=round.games[0], g1=round.games[1];
+  if(g0) setCourtTeams('c1', g0[0], g0[1], r*2+1);
+  if(g1) setCourtTeams('c2', g1[0], g1[1], r*2+2);
+
+  // Arbitrage par terrain
+  const refs=round.refs;
+  const a1=document.getElementById('c1-arb-name');
+  const a2=document.getElementById('c2-arb-name');
+  if(refs.length===0){
+    if(a1){a1.textContent='—';a1.className='court-arb-name';}
+    if(a2){a2.textContent='—';a2.className='court-arb-name';}
+  } else if(refs.length===1){
+    if(a1){a1.textContent=tLabel(refs[0]);a1.className='court-arb-name';}
+    if(a2){a2.textContent=tLabel(refs[0]);a2.className='court-arb-name';}
+  } else if(refs.length===2){
+    if(a1){a1.textContent=tLabel(refs[0]);a1.className='court-arb-name';}
+    if(a2){a2.textContent=tLabel(refs[1]);a2.className='court-arb-name';}
   } else {
-    // Round final : 4 équipes arbitrent, on les répartit 2/2
-    const half = Math.ceil(refs.length/2);
-    const left  = refs.slice(0,half).map(i=>tLabel(i)).join(' & ');
-    const right = refs.slice(half).map(i=>tLabel(i)).join(' & ');
-    if(arb1El){ arb1El.textContent=left;  arb1El.className='court-arb-name many'; }
-    if(arb2El){ arb2El.textContent=right||left; arb2El.className='court-arb-name many'; }
+    const half=Math.ceil(refs.length/2);
+    const left=refs.slice(0,half).map(i=>tLabel(i)).join(' & ');
+    const right=refs.slice(half).map(i=>tLabel(i)).join(' & ');
+    if(a1){a1.textContent=left; a1.className='court-arb-name many';}
+    if(a2){a2.textContent=right||left; a2.className='court-arb-name many';}
   }
-  document.getElementById('mhdr-info').textContent='T1·M'+(r*2+1)+(g0?' — '+tLabel(g0[0])+' vs '+tLabel(g0[1]):'')+' | T2·M'+(r*2+2)+(g1?' — '+tLabel(g1[0])+' vs '+tLabel(g1[1]):'');
+
+  document.getElementById('mhdr-info').textContent =
+    'T1·M'+(r*2+1)+(g0?' — '+tLabel(g0[0])+' vs '+tLabel(g0[1]):'')+
+    ' | T2·M'+(r*2+2)+(g1?' — '+tLabel(g1[0])+' vs '+tLabel(g1[1]):'');
+
+  // 3. Restaurer les matchs déjà joués (lecture seule)
+  ['c1','c2'].forEach(c=>{
+    const mk = currentGroup+'-'+r+'-'+c;
+    if(_matchScored[mk]){
+      // Match déjà joué : afficher résultat et bloquer
+      matchWon[c] = true;
+      const courtNum = c==='c1'?1:2;
+      const hist = getMatchFromHistory(r, courtNum);
+      if(hist){
+        scores[c][0]=hist.sA; scores[c][1]=hist.sB;
+        const s1=document.getElementById(c+'-s1'); const s2=document.getElementById(c+'-s2');
+        if(s1) s1.textContent=hist.sA; if(s2) s2.textContent=hist.sB;
+        const win=document.getElementById(c+'-win');
+        if(win){ win.textContent='🏆 '+tLabel(hist.winner)+' remporte le match !'; win.classList.add('show'); }
+      }
+      const st=document.getElementById(c+'-status'); if(st){st.className='mstatus fi';st.textContent='Terminé';}
+      // Bloquer les boutons score
+      ['s1','s2'].forEach(s=>{ const el=document.getElementById(c+'-'+s); if(el){el.style.opacity='.35';el.style.pointerEvents='none';}});
+    }
+  });
+
+  // 4. Badge round
+  const done = isRoundComplete(r);
+  const rbig = document.getElementById('round-big');
+  if(rbig){ rbig.textContent=(done?'🔒 ':'')+'ROUND '+(r+1)+' / '+sched.length; rbig.style.color=done?'#f0c060':'#a0e848'; }
   document.getElementById('rinfo-btn').textContent='Round '+(r+1)+'/'+sched.length;
-  const rbig=document.getElementById('round-big');
-  if(rbig){
-    const done=isRoundComplete(r);
-    rbig.textContent=(done?'🔒 ':'')+'ROUND '+(r+1)+' / '+sched.length;
-    rbig.style.color=done?'#f0c060':'#a0e848';
-  }
 }
 function setCourtTeams(c,a,b,mn){document.getElementById(c+'-n1').textContent=tLabel(a);document.getElementById(c+'-n2').textContent=tLabel(b);document.getElementById(c+'-d1').style.background=teams[a].color;document.getElementById(c+'-d2').style.background=teams[b].color;document.getElementById(c+'-mnum').textContent='Match '+mn;}
 function isRoundComplete(r){
@@ -1570,7 +1632,7 @@ function initFirebase(){
   window._fbOn('teams',    v=>{ teams=v;     localStorage.setItem('rcy_teams',   JSON.stringify(v)); loadRound(currentRound); });
   window._fbOn('eleves',   v=>{ eleves=v;    localStorage.setItem('rcy_eleves',  JSON.stringify(v)); });
   window._fbOn('standings', v=>{
-    if(_fbWriting) return; // ignorer le echo de nos propres écritures
+    if(_fbWriting) return;
     // Firebase peut retourner {0:[...], 1:[...]} au lieu de [[...],[...]]
     if(v && !Array.isArray(v)){
       standings = [
@@ -1592,7 +1654,12 @@ function initFirebase(){
   });
   window._fbOn('eco',      v=>{ ecoChecks=v; localStorage.setItem('rcy_eco',     JSON.stringify(v)); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
   window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); renderAthleClassement(); });
-  window._fbOn('scored',   v=>{ if(v&&!_fbWriting){_matchScored=v; localStorage.setItem('rcy_scored',JSON.stringify(v)); loadRound(currentRound);} });
+  window._fbOn('scored', v=>{
+    if(!v||_fbWriting) return;
+    _matchScored = v;
+    localStorage.setItem('rcy_scored', JSON.stringify(v));
+    loadRound(currentRound); // restaurer l'état des matchs joués
+  });
   window._fbOn('history',  v=>{
     if(_fbWriting) return; // ignorer echo
     // Firebase stocke les tableaux comme objets avec clés numériques
