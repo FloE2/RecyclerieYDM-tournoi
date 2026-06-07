@@ -655,22 +655,22 @@ function showSplash(){
 }
 
 // ══ ROUND ROBIN ══
-function buildRR(indices){
-  const pairs=[];
-  for(let i=0;i<indices.length;i++) for(let j=i+1;j<indices.length;j++) pairs.push([indices[i],indices[j]]);
-  const schedule=[];const used=new Array(pairs.length).fill(false);
-  while(used.some(u=>!u)){
-    const round={games:[],refs:[]};const inR=new Set();
-    for(let i=0;i<pairs.length;i++){
-      if(used[i])continue;const[a,b]=pairs[i];
-      if(!inR.has(a)&&!inR.has(b)&&round.games.length<2){round.games.push([a,b]);inR.add(a);inR.add(b);used[i]=true;if(round.games.length===2)break;}
-    }
-    indices.forEach(t=>{if(!inR.has(t))round.refs.push(t);});schedule.push(round);
-  }
-  return schedule;
-}
 const GROUP_A=[0,1,2,3,4,5],GROUP_B=[6,7,8,9,10,11];
-const schedules=[buildRR(GROUP_A),buildRR(GROUP_B)];
+
+// Calendriers pré-calculés : aucune équipe n'arbitre 2 fois de suite (sauf round final inévitable)
+function makeSchedule(offset){
+  return [
+    {games:[[2+offset,3+offset],[4+offset,5+offset]],refs:[0+offset,1+offset]},
+    {games:[[0+offset,4+offset],[1+offset,5+offset]],refs:[2+offset,3+offset]},
+    {games:[[2+offset,4+offset],[3+offset,5+offset]],refs:[0+offset,1+offset]},
+    {games:[[0+offset,5+offset],[1+offset,4+offset]],refs:[2+offset,3+offset]},
+    {games:[[0+offset,2+offset],[1+offset,3+offset]],refs:[4+offset,5+offset]},
+    {games:[[2+offset,5+offset],[3+offset,4+offset]],refs:[0+offset,1+offset]},
+    {games:[[0+offset,3+offset],[1+offset,2+offset]],refs:[4+offset,5+offset]},
+    {games:[[0+offset,1+offset]],refs:[2+offset,3+offset,4+offset,5+offset]},
+  ];
+}
+const schedules=[makeSchedule(0),makeSchedule(6)];
 let currentGroup=0,currentRound=0;
 let scores={c1:[0,0],c2:[0,0]},matchWon={c1:false,c2:false};
 
@@ -720,7 +720,19 @@ function loadRound(r){
   currentRound=r;const sched=schedules[currentGroup];const round=sched[r];if(!round)return;resetScores();
   const g0=round.games[0],g1=round.games[1];
   if(g0)setCourtTeams('c1',g0[0],g0[1],r*2+1);if(g1)setCourtTeams('c2',g1[0],g1[1],r*2+2);
-  document.getElementById('arb-disp').textContent=round.refs.map(i=>tLabel(i)).join(' & ')||'—';
+  // Arbitrage détaillé : qui arbitre quel terrain
+  const ng = round.games.length;
+  let arbText = '';
+  if(round.refs.length >= 2 && ng >= 2){
+    arbText = tLabel(round.refs[0]) + ' → Terrain 1   |   ' + tLabel(round.refs[1]) + ' → Terrain 2';
+  } else if(round.refs.length === 1){
+    arbText = tLabel(round.refs[0]) + ' → arbitre';
+  } else if(round.refs.length > 2){
+    arbText = round.refs.map(i=>tLabel(i)).join(' & ') + ' — tous arbitrent';
+  } else {
+    arbText = '—';
+  }
+  document.getElementById('arb-disp').textContent = arbText;
   document.getElementById('mhdr-info').textContent='T1·M'+(r*2+1)+(g0?' — '+tLabel(g0[0])+' vs '+tLabel(g0[1]):'')+' | T2·M'+(r*2+2)+(g1?' — '+tLabel(g1[0])+' vs '+tLabel(g1[1]):'');
   document.getElementById('rinfo-btn').textContent='Round '+(r+1)+'/'+sched.length;
 }
@@ -744,7 +756,26 @@ function recalc(){
       row.innerHTML=`<span class="mtime">${cur}<br><span style="color:var(--text3);font-size:.7rem;">→${end}</span></span><span class="mteam" style="color:${teams[game[0]].color}">${tLabel(game[0])}</span><span class="mvs">vs</span><span class="mteam" style="color:${teams[game[1]].color}">${tLabel(game[1])}</span>${tb}<button class="mlaunch ${currentRound===ri&&currentGroup===gi?'act':''}" onclick="currentGroup=${gi};loadRound(${ri});showView('match')">▶</button>`;
       block.appendChild(row);
     });
-    if(round.refs.length){const rr=document.createElement('div');rr.className='mrow arbr';rr.innerHTML=`<span class="mtime">${cur}</span><span class="mteam" style="color:var(--text3);">${round.refs.map(i=>tLabel(i)).join(' & ')}</span><span class="mvs">—</span><span style="color:var(--text3);font-size:.82rem;">Arbitrage</span><span class="tbadge" style="background:var(--gll);color:var(--gd);">Arb.</span><span></span>`;block.appendChild(rr);}
+    if(round.refs.length){
+      const rr=document.createElement('div');rr.className='mrow arbr';
+      const ng=round.games.length;
+      // Assign ref teams to specific matches
+      let refDetail='';
+      if(round.refs.length>=2 && ng>=2){
+        refDetail=`${tLabel(round.refs[0])} → T1 &nbsp;|&nbsp; ${tLabel(round.refs[1])} → T2`;
+      } else if(round.refs.length===1 && ng>=1){
+        refDetail=`${tLabel(round.refs[0])} → T1`;
+      } else {
+        refDetail=round.refs.map(i=>tLabel(i)).join(' & ')+' — tous arbitrent';
+      }
+      rr.innerHTML=`<span class="mtime">${cur}</span>
+        <span class="mteam" style="color:var(--text3);">🤝 Arbitrage</span>
+        <span class="mvs"></span>
+        <span style="color:var(--gd);font-size:.82rem;font-weight:600;">${refDetail}</span>
+        <span class="tbadge" style="background:var(--gll);color:var(--gd);">Arb.</span>
+        <span></span>`;
+      block.appendChild(rr);
+    }
     co.appendChild(block);cur=addMin(end,bd);
   });
   const fin=document.createElement('div');fin.innerHTML=`<div class="round-hdr" style="color:var(--am);">Fin estimée : ${cur}</div>`;co.appendChild(fin);
