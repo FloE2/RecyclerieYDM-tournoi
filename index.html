@@ -499,6 +499,40 @@ nav button:active{cursor:grabbing;}
 <div id="view-config" class="view">
   <div class="sec-title">⚙️ Configuration des équipes</div>
   <div class="info-bar">Noms courts, <strong>noms d'équipe</strong>, <strong>couleurs</strong> de maillots.</div>
+
+  <!-- ZONE RESET -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;margin-bottom:1.2rem;box-shadow:0 2px 6px rgba(58,140,74,.07);">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gd);margin-bottom:.8rem;">🔄 Remises à zéro</div>
+    <p style="font-size:.82rem;color:var(--text3);margin-bottom:.9rem;">Entre les deux rotations (Matinée 1 → Matinée 2), remet les données à zéro sans effacer les équipes ni les noms.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.7rem;">
+
+      <div style="background:var(--gll);border:1px solid var(--g3);border-radius:8px;padding:.8rem;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:800;text-transform:uppercase;color:var(--gd);margin-bottom:.4rem;">🏀 Basket</div>
+        <p style="font-size:.78rem;color:var(--text2);margin-bottom:.6rem;">Remet à zéro les scores, classements et historique des matchs basket.</p>
+        <button onclick="resetBasket()" style="font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:none;background:var(--rd);color:#fff;padding:.4rem .9rem;border-radius:5px;cursor:pointer;width:100%;">🔄 Reset Basket</button>
+      </div>
+
+      <div style="background:var(--gll);border:1px solid var(--g3);border-radius:8px;padding:.8rem;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:800;text-transform:uppercase;color:var(--gd);margin-bottom:.4rem;">🏃 Athlétisme</div>
+        <p style="font-size:.78rem;color:var(--text2);margin-bottom:.6rem;">Efface tous les temps de relais et distances de saut en longueur.</p>
+        <button onclick="resetAthle()" style="font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:none;background:var(--bl);color:#fff;padding:.4rem .9rem;border-radius:5px;cursor:pointer;width:100%;">🔄 Reset Athlé</button>
+      </div>
+
+      <div style="background:var(--gll);border:1px solid var(--g3);border-radius:8px;padding:.8rem;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:800;text-transform:uppercase;color:var(--gd);margin-bottom:.4rem;">🌿 Écolo</div>
+        <p style="font-size:.78rem;color:var(--text2);margin-bottom:.6rem;">Décoche tous les gestes écolo pour les 12 équipes.</p>
+        <button onclick="resetEcolo()" style="font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:none;background:var(--g);color:#fff;padding:.4rem .9rem;border-radius:5px;cursor:pointer;width:100%;">🔄 Reset Écolo</button>
+      </div>
+
+      <div style="background:#fff5f5;border:1px solid #f5c0c0;border-radius:8px;padding:.8rem;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:800;text-transform:uppercase;color:var(--rd);margin-bottom:.4rem;">⚠️ Tout remettre à zéro</div>
+        <p style="font-size:.78rem;color:var(--text2);margin-bottom:.6rem;">Remet basket + athlé + écolo à zéro en une seule fois.</p>
+        <button onclick="resetAll()" style="font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:none;background:#111;color:#fff;padding:.4rem .9rem;border-radius:5px;cursor:pointer;width:100%;">⚠️ Reset TOUT</button>
+      </div>
+
+    </div>
+  </div>
+
   <div class="cfg-grid" id="cfg-grid"></div>
   <button class="btn-main" onclick="applyConfig()">✓ Appliquer</button>
 </div>
@@ -669,6 +703,8 @@ function endMatch(ck,winIdx){
       ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;
       ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;
       // Record match history
+      if(!matchHistory||!Array.isArray(matchHistory)){matchHistory=[[],[]];
+let matchHistory = JSON.parse(localStorage.getItem('rcy_history')||'null') || [[],[]];}
       if(!matchHistory[currentGroup]) matchHistory[currentGroup]=[];
       matchHistory[currentGroup].push({
         round:currentRound+1, court:ck==='c1'?1:2,
@@ -726,7 +762,7 @@ function showMatchHistory(g){
 function renderMatchHistory(){
   const tbody = document.getElementById('match-history-body');
   if(!tbody) return;
-  const hist = (matchHistory[displayHistory]||[]);
+  const hist = (Array.isArray(matchHistory) && matchHistory[displayHistory]) ? matchHistory[displayHistory] : [];
   if(!hist.length){
     tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1rem;">Aucun match enregistré pour ce groupe</td></tr>';
     return;
@@ -968,6 +1004,61 @@ function applyConfig(){
   save();loadRound(currentRound);recalc();renderClassement();buildEquipesPage();buildAthleGrid();buildEcoTable();buildConfigGrid();
 }
 
+// ══ RESET FUNCTIONS ══
+function resetBasket(){
+  if(!confirm('Remettre le basket à zéro ? (scores, classements, historique)\nCette action est irréversible.')) return;
+  standings = [
+    GROUP_A.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
+    GROUP_B.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}))
+  ];
+  matchHistory = [[],[]];
+  resetScores();
+  save();
+  renderClassement();
+  renderMatchHistory();
+  alert('✓ Basket remis à zéro !');
+}
+
+function resetAthle(){
+  if(!confirm('Remettre l'athlétisme à zéro ? (temps relais + sauts)\nCette action est irréversible.')) return;
+  athleData = Array.from({length:12}, (_,i)=>({
+    relay: '',
+    jumps: elevesByTeam(i).map(e=>({id:e.id, prenom:e.prenom, dist:''}))
+  }));
+  save();
+  renderAthleClassement();
+  alert('✓ Athlétisme remis à zéro !');
+}
+
+function resetEcolo(){
+  if(!confirm('Remettre les points écolo à zéro ?\nTous les gestes cochés seront effacés.')) return;
+  ecoChecks = Array.from({length:12}, ()=>({}));
+  save();
+  const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable();
+  alert('✓ Écolo remis à zéro !');
+}
+
+function resetAll(){
+  if(!confirm('⚠️ RESET COMPLET : basket + athlé + écolo ?\nLes équipes et noms sont conservés.\nCette action est irréversible.')) return;
+  standings = [
+    GROUP_A.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
+    GROUP_B.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}))
+  ];
+  matchHistory = [[],[]];
+  athleData = Array.from({length:12}, (_,i)=>({
+    relay: '',
+    jumps: elevesByTeam(i).map(e=>({id:e.id, prenom:e.prenom, dist:''}))
+  }));
+  ecoChecks = Array.from({length:12}, ()=>({}));
+  resetScores();
+  save();
+  renderClassement();
+  renderMatchHistory();
+  renderAthleClassement();
+  const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable();
+  alert('✓ Tout remis à zéro ! Bonne deuxième session !');
+}
+
 // ══ NAV ══
 const VIEW_MAP={planning:1,ecolo:2,classement:3,match:4,athle:5,final:6,'regles-basket':7,equipes:8,config:9};
 function showView(v){
@@ -1179,7 +1270,19 @@ function initFirebase(){
   window._fbOn('standings',v=>{ standings=v; localStorage.setItem('rcy_standings',JSON.stringify(v)); renderClassement(); });
   window._fbOn('eco',      v=>{ ecoChecks=v; localStorage.setItem('rcy_eco',     JSON.stringify(v)); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
   window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); renderAthleClassement(); });
-  window._fbOn('history',  v=>{ matchHistory=v; localStorage.setItem('rcy_history',JSON.stringify(v)); renderMatchHistory(); });
+  window._fbOn('history',  v=>{
+    // Firebase stocke les tableaux comme objets avec clés numériques
+    if(v && !Array.isArray(v)){
+      matchHistory = [
+        Array.isArray(v[0]) ? v[0] : (v[0] ? Object.values(v[0]) : []),
+        Array.isArray(v[1]) ? v[1] : (v[1] ? Object.values(v[1]) : [])
+      ];
+    } else {
+      matchHistory = v || [[],[]];
+    }
+    localStorage.setItem('rcy_history',JSON.stringify(matchHistory));
+    renderMatchHistory();
+  });
   window._fbOn('rules',    v=>{ rulesData=v; localStorage.setItem('rcy_rules',   JSON.stringify(v)); renderRulesView(); });
   window._fbOn('gestes',   v=>{ gestesData=v; GESTES.length=0; v.forEach(g=>GESTES.push(g)); localStorage.setItem('rcy_gestes',JSON.stringify(v)); buildSplash(); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
   setSyncDot('ok');
