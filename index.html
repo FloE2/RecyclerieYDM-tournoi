@@ -627,6 +627,7 @@ let standings  = JSON.parse(localStorage.getItem('rcy_standings')||'null') || [
   [0,1,2,3,4,5].map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
   [6,7,8,9,10,11].map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
 ];
+let matchHistory = JSON.parse(localStorage.getItem('rcy_history')||'null') || [[],[]];
 
 function save(){
   // Cache local (hors-ligne)
@@ -730,8 +731,7 @@ function endMatch(ck,winIdx){
       ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;
       ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;
       // Record match history
-      if(!matchHistory||!Array.isArray(matchHistory)){matchHistory=[[],[]];
-let matchHistory = JSON.parse(localStorage.getItem('rcy_history')||'null') || [[],[]];}
+      if(!matchHistory||!Array.isArray(matchHistory)){matchHistory=[[],[]];}
       if(!matchHistory[currentGroup]) matchHistory[currentGroup]=[];
       matchHistory[currentGroup].push({
         round:currentRound+1, court:ck==='c1'?1:2,
