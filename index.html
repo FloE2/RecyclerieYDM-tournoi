@@ -753,7 +753,21 @@ function resetChrono(){clearInterval(chronoIv);chronoOn=false;chronoRem=matchDur
 function setStatuses(s){['c1','c2'].forEach(c=>{const won=(c==='c1'?matchWon.c1:matchWon.c2);if(!won){const el=document.getElementById(c+'-status');el.className='mstatus '+(s==='ec'?'ec':s==='pa'?'pa':'fi');el.textContent=s==='ec'?'En cours':s==='pa'?'Pause':'Terminé';}});}
 
 // ══ SCORE ══
-function ap(court,slot,pts){const ck='c'+court;if(matchWon[ck])return;const idx=slot-1;scores[ck][idx]=Math.max(0,scores[ck][idx]+pts);document.getElementById(ck+'-s'+(idx+1)).textContent=scores[ck][idx];if(scores[ck][idx]>=15)endMatch(ck,idx);}
+function ap(court,slot,pts){
+  const ck='c'+court;
+  if(matchWon[ck]) return; // match déjà terminé
+  const idx=slot-1;
+  const newScore = Math.max(0, scores[ck][idx]+pts);
+  scores[ck][idx] = newScore;
+  // Afficher le score (plafonné à l'affichage si >=15)
+  const el=document.getElementById(ck+'-s'+(idx+1));
+  if(el) el.textContent=newScore;
+  // Si score atteint 15, terminer le match IMMÉDIATEMENT
+  if(newScore>=15){
+    matchWon[ck]=true; // bloquer tout nouveau ap() avant même endMatch
+    endMatch(ck,idx);
+  }
+}
 function safeResetScores(){
   // Bloquer le reset si le round courant est terminé (matchs verrouillés)
   if(isRoundComplete(currentRound)){
@@ -817,10 +831,11 @@ function isRoundComplete(r){
 function endMatch(ck, winIdx){
   const matchKey = currentGroup+'-'+currentRound+'-'+ck;
 
-  // Clé unique : bloquer le double enregistrement
+  // Double protection : clé Firebase ET flag mémoire
   if(_matchScored[matchKey]) return;
+  if(matchWon[ck] && _matchScored[matchKey]) return;
 
-  matchWon[ck] = true;
+  matchWon[ck] = true; // au cas où ap() n'aurait pas setté
   const loIdx = winIdx===0?1:0;
 
   // Affichage "Terminé"
@@ -874,8 +889,17 @@ function endByTime(){
   clearInterval(chronoIv);chronoOn=false;
   document.getElementById('btn-start').textContent='▶ Démarrer';
   document.getElementById('btn-start').className='btn-g';
-  if(!matchWon.c1)endMatch('c1',scores.c1[0]>=scores.c1[1]?0:1);
-  if(!matchWon.c2)endMatch('c2',scores.c2[0]>=scores.c2[1]?0:1);
+  // Seulement terminer les matchs pas encore joués
+  if(!matchWon.c1 && !_matchScored[currentGroup+'-'+currentRound+'-c1']){
+    const winIdx = scores.c1[0]>=scores.c1[1]?0:1;
+    matchWon.c1=true;
+    endMatch('c1', winIdx);
+  }
+  if(!matchWon.c2 && !_matchScored[currentGroup+'-'+currentRound+'-c2']){
+    const winIdx = scores.c2[0]>=scores.c2[1]?0:1;
+    matchWon.c2=true;
+    endMatch('c2', winIdx);
+  }
 }
 function loadRound(r){
   currentRound = r;
@@ -1277,8 +1301,18 @@ function resetBasket(){
     GROUP_B.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}))
   ];
   matchHistory = [[],[]];
-  resetScores();
+  _matchScored = {};
+  localStorage.setItem('rcy_scored','{}');
+  localStorage.setItem('rcy_history',JSON.stringify(matchHistory));
+  localStorage.setItem('rcy_standings',JSON.stringify(standings));
+  if(window._fbSet){
+    window._fbSet('scored', {});
+    window._fbSet('history', matchHistory);
+    window._fbSet('standings', standings);
+  }
   save();
+  currentRound = 0;
+  loadRound(0); // Recharge le round 1 sans cadenas
   renderClassement();
   renderMatchHistory();
   alert("Basket remis a zero !");
@@ -1313,6 +1347,7 @@ function resetAll(){
   _matchScored = {};
   localStorage.setItem('rcy_scored','{}');
   if(window._fbSet) window._fbSet('scored', {});
+  currentRound=0;
   athleData = Array.from({length:12}, (_,i)=>({
     relay: '',
     jumps: elevesByTeam(i).map(e=>({id:e.id, prenom:e.prenom, dist:''}))
@@ -1320,6 +1355,8 @@ function resetAll(){
   ecoChecks = Array.from({length:12}, ()=>({}));
   resetScores();
   save();
+  currentRound=0;
+  loadRound(0);
   renderClassement();
   renderMatchHistory();
   renderAthleClassement();
