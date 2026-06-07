@@ -392,10 +392,15 @@ nav button:active{cursor:grabbing;}
       <button class="btn-a" onclick="resetScores()">Reset scores</button>
       <button class="btn-g" id="btn-start" onclick="toggleChrono()">▶ Démarrer</button>
       <button onclick="resetChrono()">Reset chrono</button>
-      <select id="dur-select" onchange="updateDuration()" style="width:80px;">
-        <option value="480">8 min</option><option value="600" selected>10 min</option>
-        <option value="720">12 min</option><option value="900">15 min</option>
-      </select>
+      <div style="display:flex;align-items:center;gap:3px;">
+        <button onclick="adjustDur(-1)" style="font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:900;border:1px solid rgba(100,200,80,.3);background:rgba(30,80,30,.6);color:#c0e0a0;padding:.15rem .5rem;border-radius:4px;cursor:pointer;line-height:1;touch-action:manipulation;">−</button>
+        <input type="number" id="dur-input" value="10" min="1" max="60" step="1"
+          onchange="updateDuration()"
+          style="width:46px;background:rgba(30,80,30,.6);border:1px solid rgba(100,200,80,.3);color:#c0e0a0;padding:.25rem .3rem;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:700;text-align:center;"
+          title="Durée du match en minutes">
+        <button onclick="adjustDur(1)" style="font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:900;border:1px solid rgba(100,200,80,.3);background:rgba(30,80,30,.6);color:#c0e0a0;padding:.15rem .5rem;border-radius:4px;cursor:pointer;line-height:1;touch-action:manipulation;">+</button>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;color:#80a060;">MIN</span>
+      </div>
       <button onclick="toggleFS()">⛶ Plein écran</button>
     </div>
   </div>
@@ -727,6 +732,11 @@ let matchDur=600,chronoRem=600,chronoOn=false,chronoIv=null;
 function p2(n){return String(n).padStart(2,'0');}
 function fmt(s){return p2(Math.floor(s/60))+':'+p2(s%60);}
 function updateChronoDisplay(){const el=document.getElementById('chrono');el.textContent=fmt(chronoRem);el.className='chrono-disp'+(chronoRem<=60?' dng':chronoRem<=120?' warn':'');}
+function adjustDur(delta){
+  const inp = document.getElementById('dur-input');
+  inp.value = Math.max(1, Math.min(60, (parseInt(inp.value)||10) + delta));
+  updateDuration();
+}
 function updateDuration(){matchDur=parseInt(document.getElementById('dur-select').value);if(!chronoOn){chronoRem=matchDur;updateChronoDisplay();}document.getElementById('mdur').value=matchDur/60;}
 function toggleChrono(){
   if(chronoOn){clearInterval(chronoIv);chronoOn=false;document.getElementById('btn-start').textContent='▶ Démarrer';document.getElementById('btn-start').className='btn-g';setStatuses('pa');}
