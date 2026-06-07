@@ -1335,7 +1335,27 @@ function initFirebase(){
   setSyncDot('load');
   window._fbOn('teams',    v=>{ teams=v;     localStorage.setItem('rcy_teams',   JSON.stringify(v)); loadRound(currentRound); });
   window._fbOn('eleves',   v=>{ eleves=v;    localStorage.setItem('rcy_eleves',  JSON.stringify(v)); });
-  window._fbOn('standings',v=>{ standings=v; localStorage.setItem('rcy_standings',JSON.stringify(v)); renderClassement(); });
+  window._fbOn('standings', v=>{
+    // Firebase peut retourner {0:[...], 1:[...]} au lieu de [[...],[...]]
+    if(v && !Array.isArray(v)){
+      standings = [
+        Array.isArray(v[0]) ? v[0] : (v[0] ? Object.values(v[0]) : []),
+        Array.isArray(v[1]) ? v[1] : (v[1] ? Object.values(v[1]) : [])
+      ];
+    } else {
+      standings = v || [
+        GROUP_A.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
+        GROUP_B.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}))
+      ];
+    }
+    // Normalise : s'assurer que chaque groupe a bien tous ses membres
+    [0,1].forEach(g=>{
+      const grpIdx = g===0 ? GROUP_A : GROUP_B;
+      standings[g] = grpIdx.map(i=>(standings[g]||[]).find(s=>s&&s.idx===i) || {idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});
+    });
+    localStorage.setItem('rcy_standings', JSON.stringify(standings));
+    renderClassement();
+  });
   window._fbOn('eco',      v=>{ ecoChecks=v; localStorage.setItem('rcy_eco',     JSON.stringify(v)); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
   window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); renderAthleClassement(); });
   window._fbOn('history',  v=>{
@@ -1358,8 +1378,17 @@ function initFirebase(){
 window.addEventListener('fb-ready', ()=>{ setTimeout(initFirebase, 300); });
 
 function init(){
-  // Normalise standings depuis cache
-  [0,1].forEach(g=>{const grpIdx=g===0?GROUP_A:GROUP_B;standings[g]=grpIdx.map(i=>(standings[g]||[]).find(s=>s.idx===i)||{idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});});
+  // Normalise standings depuis cache localStorage — sans écraser les données réelles
+  [0,1].forEach(g=>{
+    const grpIdx = g===0 ? GROUP_A : GROUP_B;
+    // Seulement si le groupe est vide ou mal formé
+    if(!standings[g] || !Array.isArray(standings[g]) || standings[g].length===0){
+      standings[g] = grpIdx.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}));
+    } else {
+      // Compléter les équipes manquantes sans écraser les existantes
+      standings[g] = grpIdx.map(i=>(standings[g]||[]).find(s=>s&&s.idx===i) || {idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});
+    }
+  });
   // Charge gestes & règles depuis cache localStorage (Firebase met à jour via listeners)
   const sg=localStorage.getItem('rcy_gestes');
   if(sg){try{const g=JSON.parse(sg);GESTES.length=0;g.forEach(x=>GESTES.push(x));gestesData=GESTES.map(g=>({...g}));}catch(e){}}
