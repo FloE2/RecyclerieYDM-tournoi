@@ -629,6 +629,8 @@ let standings  = JSON.parse(localStorage.getItem('rcy_standings')||'null') || [
 ];
 let matchHistory = JSON.parse(localStorage.getItem('rcy_history')||'null') || [[],[]];
 
+let _fbWriting = false; // flag pour éviter que onValue re-déclenche sur nos propres écritures
+
 function save(){
   // Cache local (hors-ligne)
   localStorage.setItem('rcy_teams',    JSON.stringify(teams));
@@ -639,13 +641,15 @@ function save(){
   // Firebase — source de vérité unique
   if(window._fbSet){
     setSyncDot('load');
+    _fbWriting = true;
     window._fbSet('teams',    teams);
     window._fbSet('eleves',   eleves);
     window._fbSet('eco',      ecoChecks);
     window._fbSet('athle',    athleData);
     window._fbSet('standings',standings);
     window._fbSet('history',  matchHistory);
-    setSyncDot('ok');
+    // Reset flag après délai (Firebase confirme l'écriture en ~200ms)
+    setTimeout(()=>{ _fbWriting=false; setSyncDot('ok'); }, 600);
   }
 }
 function setSyncDot(state){
@@ -718,19 +722,33 @@ function setStatuses(s){['c1','c2'].forEach(c=>{const won=(c==='c1'?matchWon.c1:
 // ══ SCORE ══
 function ap(court,slot,pts){const ck='c'+court;if(matchWon[ck])return;const idx=slot-1;scores[ck][idx]=Math.max(0,scores[ck][idx]+pts);document.getElementById(ck+'-s'+(idx+1)).textContent=scores[ck][idx];if(scores[ck][idx]>=15)endMatch(ck,idx);}
 function resetScores(){scores={c1:[0,0],c2:[0,0]};matchWon={c1:false,c2:false};['c1','c2'].forEach(c=>{[1,2].forEach(t=>{document.getElementById(c+'-s'+t).textContent='0';});document.getElementById(c+'-win').classList.remove('show');const st=document.getElementById(c+'-status');st.className='mstatus ec';st.textContent='En cours';});resetChrono();}
+// Track which matches have been scored this session (prevents double-count from Firebase listeners)
+const _matchScored = new Set();
+
 function endMatch(ck,winIdx){
   matchWon[ck]=true;const loIdx=winIdx===0?1:0;
-  document.getElementById(ck+'-status').className='mstatus fi';document.getElementById(ck+'-status').textContent='Terminé';
+  document.getElementById(ck+'-status').className='mstatus fi';
+  document.getElementById(ck+'-status').textContent='Terminé';
   const round=schedules[currentGroup][currentRound];const gi=ck==='c1'?0:1;
   if(round&&round.games[gi]){
     const[a,b]=round.games[gi];const wt=winIdx===0?a:b,lt=winIdx===0?b:a;
     document.getElementById(ck+'-win').textContent='🏆 '+tLabel(wt)+' remporte le match !';
     document.getElementById(ck+'-win').classList.add('show');
-    const ws=standings[currentGroup].find(s=>s.idx===wt);const ls=standings[currentGroup].find(s=>s.idx===lt);
+
+    // ── Clé unique pour ce match (groupe + round + court) ──
+    const matchKey = currentGroup+'-'+currentRound+'-'+ck;
+    if(_matchScored.has(matchKey)){
+      // Déjà enregistré cette session — affichage seulement, pas de double comptage
+      return;
+    }
+    _matchScored.add(matchKey);
+
+    const ws=standings[currentGroup].find(s=>s.idx===wt);
+    const ls=standings[currentGroup].find(s=>s.idx===lt);
     if(ws&&ls){
       ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;
       ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;
-      // Record match history
+      // Historique
       if(!matchHistory||!Array.isArray(matchHistory)){matchHistory=[[],[]];}
       if(!matchHistory[currentGroup]) matchHistory[currentGroup]=[];
       matchHistory[currentGroup].push({
@@ -1336,6 +1354,7 @@ function initFirebase(){
   window._fbOn('teams',    v=>{ teams=v;     localStorage.setItem('rcy_teams',   JSON.stringify(v)); loadRound(currentRound); });
   window._fbOn('eleves',   v=>{ eleves=v;    localStorage.setItem('rcy_eleves',  JSON.stringify(v)); });
   window._fbOn('standings', v=>{
+    if(_fbWriting) return; // ignorer le echo de nos propres écritures
     // Firebase peut retourner {0:[...], 1:[...]} au lieu de [[...],[...]]
     if(v && !Array.isArray(v)){
       standings = [
@@ -1348,7 +1367,6 @@ function initFirebase(){
         GROUP_B.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}))
       ];
     }
-    // Normalise : s'assurer que chaque groupe a bien tous ses membres
     [0,1].forEach(g=>{
       const grpIdx = g===0 ? GROUP_A : GROUP_B;
       standings[g] = grpIdx.map(i=>(standings[g]||[]).find(s=>s&&s.idx===i) || {idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});
@@ -1359,6 +1377,7 @@ function initFirebase(){
   window._fbOn('eco',      v=>{ ecoChecks=v; localStorage.setItem('rcy_eco',     JSON.stringify(v)); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
   window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); renderAthleClassement(); });
   window._fbOn('history',  v=>{
+    if(_fbWriting) return; // ignorer echo
     // Firebase stocke les tableaux comme objets avec clés numériques
     if(v && !Array.isArray(v)){
       matchHistory = [
