@@ -384,7 +384,10 @@ nav button:active{cursor:grabbing;}
 <!-- ══════════ MATCH ══════════ -->
 <div id="view-match" class="view">
   <div class="mhdr">
-    <div class="mhdr-title" id="mhdr-info">Terrain 1 · Match 1 | Terrain 2 · Match 2</div>
+    <div style="display:flex;align-items:center;gap:1.2rem;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:900;letter-spacing:.06em;color:#a0e848;line-height:1;white-space:nowrap;" id="round-big">ROUND 1/8</div>
+      <div class="mhdr-title" id="mhdr-info">Terrain 1 · Match 1 | Terrain 2 · Match 2</div>
+    </div>
     <div class="mhdr-ctrl">
       <button class="btn-a" onclick="resetScores()">Reset scores</button>
       <button class="btn-g" id="btn-start" onclick="toggleChrono()">▶ Démarrer</button>
@@ -790,6 +793,8 @@ function loadRound(r){
   }
   document.getElementById('mhdr-info').textContent='T1·M'+(r*2+1)+(g0?' — '+tLabel(g0[0])+' vs '+tLabel(g0[1]):'')+' | T2·M'+(r*2+2)+(g1?' — '+tLabel(g1[0])+' vs '+tLabel(g1[1]):'');
   document.getElementById('rinfo-btn').textContent='Round '+(r+1)+'/'+sched.length;
+  const rbig=document.getElementById('round-big');
+  if(rbig) rbig.textContent='ROUND '+(r+1)+' / '+sched.length;
 }
 function setCourtTeams(c,a,b,mn){document.getElementById(c+'-n1').textContent=tLabel(a);document.getElementById(c+'-n2').textContent=tLabel(b);document.getElementById(c+'-d1').style.background=teams[a].color;document.getElementById(c+'-d2').style.background=teams[b].color;document.getElementById(c+'-mnum').textContent='Match '+mn;}
 function nextRound(){const s=schedules[currentGroup];if(currentRound<s.length-1)loadRound(currentRound+1);}
