@@ -317,7 +317,7 @@ nav button:active{cursor:grabbing;}
   <button onclick="showSplash()" id="btn-accueil">🏠 Accueil</button>
   <button onclick="showView('planning')">📋 Planning</button>
   <button onclick="showView('ecolo')">🌿 Écolo</button>
-  <button onclick="showView('classement')">🏆 Basket</button>
+  <button onclick="showView('classement')">🏆 Classement basket</button>
   <button onclick="showView('match')">🏀 Match</button>
   <button onclick="showView('athle')">🏃 Athlé</button>
   <button onclick="showView('final')">🥇 Final</button>
@@ -421,8 +421,18 @@ nav button:active{cursor:grabbing;}
     <button onclick="showGroup(0)" id="gbtn0" class="gbtn act">Groupe A (Éq. 1–6)</button>
     <button onclick="showGroup(1)" id="gbtn1" class="gbtn">Groupe B (Éq. 7–12)</button>
   </div>
-  <div class="class-wrap"><table class="ctbl"><thead><tr><th>#</th><th>Équipe</th><th>J</th><th>V</th><th>D</th><th>Pts+</th><th>Pts−</th><th>Diff</th><th>Pts</th></tr></thead><tbody id="ctbl-body"></tbody></table></div>
-  <p style="font-size:.75rem;color:var(--text3);">Victoire=2pts · Défaite=1pt · Départage: différence puis points marqués</p>
+  <div class="class-wrap"><table class="ctbl"><thead><tr><th>#</th><th>Équipe</th><th>J</th><th>V</th><th>D</th><th>Pts+</th><th>Pts−</th><th>Diff</th><th>Pts classement</th></tr></thead><tbody id="ctbl-body"></tbody></table></div>
+  <p style="font-size:.75rem;color:var(--text3);margin-bottom:1.2rem;">Victoire=2pts · Défaite=0pt · Max 10 pts (5 matchs × 2) · Départage: différence puis points marqués</p>
+
+  <div class="sec-title" style="font-size:1rem;">📋 Récap des matchs joués</div>
+  <div style="display:flex;gap:.6rem;margin-bottom:.8rem;">
+    <button onclick="showMatchHistory(0)" id="hbtn0" class="gbtn act">Groupe A</button>
+    <button onclick="showMatchHistory(1)" id="hbtn1" class="gbtn">Groupe B</button>
+  </div>
+  <div class="class-wrap"><table class="ctbl" id="match-history-tbl">
+    <thead><tr><th>Round</th><th>Match</th><th>Équipe A</th><th>Score A</th><th>Score B</th><th>Équipe B</th><th>Résultat</th></tr></thead>
+    <tbody id="match-history-body"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1rem;">Aucun match enregistré</td></tr></tbody>
+  </table></div>
 </div>
 
 <!-- ══════════ ATHLÉ ══════════ -->
@@ -431,12 +441,16 @@ nav button:active{cursor:grabbing;}
   <div class="info-bar"><strong>Relais 6×100m</strong> (temps en secondes) + <strong>Saut en longueur</strong> (meilleur saut par athlète en cm).</div>
   <div class="ath-grid" id="ath-grid"></div>
   <div style="margin-top:1.5rem;">
-    <div class="sec-title">Classement athlétisme</div>
-    <div style="display:flex;gap:.6rem;margin-bottom:.8rem;">
-      <button onclick="calcAthle();showAthleGroup(0)" class="gbtn act">Groupe A</button>
-      <button onclick="calcAthle();showAthleGroup(1)" class="gbtn">Groupe B</button>
+    <div class="sec-title">Classement athlétisme — 12 équipes</div>
+    <div class="info-bar" style="margin-bottom:.8rem;">
+      Classement général toutes équipes confondues. Relais : meilleur temps = 12 pts → pire = 1 pt.
+      Longueur : meilleure distance = 12 pts → pire = 1 pt. Total max = 24 pts → normalisé sur <strong>10 pts</strong>.
     </div>
-    <div class="class-wrap"><table class="ctbl"><thead><tr><th>#</th><th>Équipe</th><th>Relais (s)</th><th>Cl.</th><th>Longueur (cm)</th><th>Cl.</th><th>Pts athlé</th></tr></thead><tbody id="ath-ctbl"></tbody></table></div>
+    <button class="btn-main" style="margin-bottom:.8rem;font-size:.82rem;padding:.35rem .9rem;" onclick="calcAthle();renderAthleClassement()">🔄 Actualiser le classement</button>
+    <div class="class-wrap"><table class="ctbl">
+      <thead><tr><th>#</th><th>Équipe</th><th>Relais (s)</th><th>Cl. Relais</th><th>Longueur (cm)</th><th>Cl. Longueur</th><th>Pts bruts /24</th><th>Pts athlé /10</th></tr></thead>
+      <tbody id="ath-ctbl"></tbody>
+    </table></div>
   </div>
 </div>
 
@@ -568,6 +582,7 @@ function save(){
     window._fbSet('eco',      ecoChecks);
     window._fbSet('athle',    athleData);
     window._fbSet('standings',standings);
+    window._fbSet('history',  matchHistory);
     setSyncDot('ok');
   }
 }
@@ -650,7 +665,18 @@ function endMatch(ck,winIdx){
     document.getElementById(ck+'-win').textContent='🏆 '+tLabel(wt)+' remporte le match !';
     document.getElementById(ck+'-win').classList.add('show');
     const ws=standings[currentGroup].find(s=>s.idx===wt);const ls=standings[currentGroup].find(s=>s.idx===lt);
-    if(ws&&ls){ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;save();}
+    if(ws&&ls){
+      ws.played++;ws.wins++;ws.pf+=scores[ck][winIdx];ws.pa+=scores[ck][loIdx];ws.pts+=2;
+      ls.played++;ls.losses++;ls.pf+=scores[ck][loIdx];ls.pa+=scores[ck][winIdx];ls.pts+=1;
+      // Record match history
+      if(!matchHistory[currentGroup]) matchHistory[currentGroup]=[];
+      matchHistory[currentGroup].push({
+        round:currentRound+1, court:ck==='c1'?1:2,
+        tA:wt, tB:lt, sA:scores[ck][winIdx], sB:scores[ck][loIdx], winner:wt
+      });
+      localStorage.setItem('rcy_history',JSON.stringify(matchHistory));
+      save();
+    }
   }
 }
 function endByTime(){clearInterval(chronoIv);chronoOn=false;document.getElementById('btn-start').textContent='▶ Démarrer';document.getElementById('btn-start').className='btn-g';if(!matchWon.c1)endMatch('c1',scores.c1[0]>=scores.c1[1]?0:1);if(!matchWon.c2)endMatch('c2',scores.c2[0]>=scores.c2[1]?0:1);}
@@ -689,6 +715,37 @@ function recalc(){
 }
 
 // ══ CLASSEMENT BASKET ══
+
+let displayHistory = 0;
+function showMatchHistory(g){
+  displayHistory=g;
+  document.getElementById('hbtn0').classList.toggle('act',g===0);
+  document.getElementById('hbtn1').classList.toggle('act',g===1);
+  renderMatchHistory();
+}
+function renderMatchHistory(){
+  const tbody = document.getElementById('match-history-body');
+  if(!tbody) return;
+  const hist = (matchHistory[displayHistory]||[]);
+  if(!hist.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1rem;">Aucun match enregistré pour ce groupe</td></tr>';
+    return;
+  }
+  // Sort by round then court
+  const sorted = [...hist].sort((a,b)=>a.round-b.round||a.court-b.court);
+  tbody.innerHTML = sorted.map((m,i)=>{
+    const winner = m.winner===m.tA;
+    return `<tr>
+      <td style="color:var(--text3)">R${m.round}</td>
+      <td><span class="tbadge ${m.court===1?'t1b':'t2b'}">T${m.court}</span></td>
+      <td class="tcell" style="color:${teams[m.tA].color};${winner?'font-weight:900;':''}">${tLabel(m.tA)}</td>
+      <td style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:${winner?'var(--g)':'var(--text3)'};">${m.sA}</td>
+      <td style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:${!winner?'var(--g)':'var(--text3)'};">${m.sB}</td>
+      <td class="tcell" style="color:${teams[m.tB].color};${!winner?'font-weight:900;':''}">${tLabel(m.tB)}</td>
+      <td><span style="font-family:'Barlow Condensed';font-size:.8rem;font-weight:700;color:${winner?'var(--g)':'var(--rd)'};">${winner?'✓ '+tLabel(m.tA):'✓ '+tLabel(m.tB)}</span></td>
+    </tr>`;
+  }).join('');
+}
 let displayGroup=0;
 function showGroup(g){displayGroup=g;document.querySelectorAll('.gbtn').forEach((b,i)=>b.classList.toggle('act',i===g));renderClassement();}
 function renderClassement(){
@@ -721,15 +778,61 @@ function saveAthle(i){
   save();
 }
 function calcAthle(){for(let i=0;i<12;i++)saveAthle(i);}
-function showAthleGroup(g){
-  const grpIdx=g===0?GROUP_A:GROUP_B;
-  const rows=grpIdx.map(i=>{const relay=parseFloat(athleData[i].relay)||Infinity;const totalJump=athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0),0);return{idx:i,relay,totalJump};});
-  const rr=[...rows].sort((a,b)=>a.relay-b.relay);rr.forEach((r,ri)=>{rows.find(x=>x.idx===r.idx).relayRank=ri+1;});
-  const jr=[...rows].sort((a,b)=>b.totalJump-a.totalJump);jr.forEach((r,ri)=>{rows.find(x=>x.idx===r.idx).jumpRank=ri+1;});
-  rows.forEach(r=>{r.athPts=r.relayRank+r.jumpRank;});rows.sort((a,b)=>a.athPts-b.athPts);
-  const tbody=document.getElementById('ath-ctbl');tbody.innerHTML='';
-  rows.forEach((r,rank)=>{const rc=rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';tbody.innerHTML+=`<tr><td class="rk ${rc}">${rank+1}</td><td class="tcell" style="color:${teams[r.idx].color}">${tLabel(r.idx)}</td><td>${r.relay===Infinity?'—':r.relay.toFixed(2)+' s'}</td><td>${r.relayRank}</td><td>${r.totalJump>0?r.totalJump+' cm':'—'}</td><td>${r.jumpRank}</td><td><span class="ptsbdg">${r.athPts}</span></td></tr>`;});
+// Classement athlé unifié sur 12 équipes
+function renderAthleClassement(){
+  // Collect all 12 teams
+  const rows = Array.from({length:12}, (_,i)=>({
+    idx: i,
+    relay:     parseFloat(athleData[i].relay)||Infinity,
+    totalJump: athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0), 0),
+  }));
+
+  // Relay rank : best (lowest) time = rank 1 → 12 pts, worst = rank 12 → 1 pt
+  const byRelay = [...rows].sort((a,b)=>a.relay-b.relay);
+  byRelay.forEach((r,ri)=>{
+    rows.find(x=>x.idx===r.idx).relayRank = ri+1;
+    rows.find(x=>x.idx===r.idx).relayPts  = r.relay===Infinity ? 0 : (12-ri); // 12→11→…→1
+  });
+
+  // Jump rank : best (highest) total = rank 1 → 12 pts, worst = rank 12 → 1 pt
+  const byJump = [...rows].sort((a,b)=>b.totalJump-a.totalJump);
+  byJump.forEach((r,ri)=>{
+    rows.find(x=>x.idx===r.idx).jumpRank = ri+1;
+    rows.find(x=>x.idx===r.idx).jumpPts  = r.totalJump===0 ? 0 : (12-ri); // 12→11→…→1
+  });
+
+  // Total brut /24, normalized /10
+  rows.forEach(r=>{
+    r.rawPts = (r.relayPts||0) + (r.jumpPts||0); // max 24
+    r.athScore = r.rawPts===0 ? 0 : Math.round(r.rawPts / 24 * 10 * 10) / 10; // /10
+  });
+  rows.sort((a,b)=>b.rawPts-a.rawPts);
+
+  const tbody = document.getElementById('ath-ctbl');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  rows.forEach((r,rank)=>{
+    const rc = rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';
+    const relStr = r.relay===Infinity ? '—' : r.relay.toFixed(2)+' s';
+    const jStr   = r.totalJump>0 ? r.totalJump.toFixed(0)+' cm' : '—';
+    const bar = v => `<div style="display:flex;align-items:center;gap:.3rem;">
+      <div style="flex:1;background:var(--gll);border-radius:3px;height:6px;min-width:40px;">
+        <div style="width:${Math.round(v/10*100)}%;background:var(--g);height:6px;border-radius:3px;"></div>
+      </div><span style="font-size:.8rem;font-weight:700;color:var(--gd);">${v}</span></div>`;
+    tbody.innerHTML += `<tr>
+      <td class="rk ${rc}">${rank+1}</td>
+      <td class="tcell" style="color:${teams[r.idx].color}">${tLabel(r.idx)}</td>
+      <td>${relStr}</td>
+      <td><span style="font-family:'Barlow Condensed';font-size:.85rem;font-weight:700;">${r.relayRank}<span style="color:var(--text3);font-size:.7rem;"> (${r.relayPts||0}pts)</span></span></td>
+      <td>${jStr}</td>
+      <td><span style="font-family:'Barlow Condensed';font-size:.85rem;font-weight:700;">${r.jumpRank}<span style="color:var(--text3);font-size:.7rem;"> (${r.jumpPts||0}pts)</span></span></td>
+      <td><span class="ptsbdg" style="background:var(--gll);">${r.rawPts}<span style="font-size:.65rem;opacity:.6;">/24</span></span></td>
+      <td>${bar(r.athScore)}</td>
+    </tr>`;
+  });
 }
+// Legacy alias (kept for any remaining calls)
+function showAthleGroup(g){ renderAthleClassement(); }
 
 // ══ ÉCOLO TABLE ══
 function buildEcoTable(){
@@ -782,33 +885,26 @@ function calcFinal(){
     standings[g].forEach(s=>{ bkPtsMap[s.idx] = Math.min(s.pts, 10); });
   });
 
-  // ── ATHLÉ : normalisé sur 10 par groupe ──
+  // ── ATHLÉ : classement unifié 12 équipes, normalisé sur 10 ──
   const athPtsMap = {};
-  [GROUP_A, GROUP_B].forEach(grpIdx=>{
-    const rows = grpIdx.map(i=>{
-      const relay     = parseFloat(athleData[i].relay)||Infinity;
-      const totalJump = athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0),0);
-      return {idx:i, relay, totalJump};
+  {
+    const rows = Array.from({length:12}, (_,i)=>({
+      idx: i,
+      relay:     parseFloat(athleData[i].relay)||Infinity,
+      totalJump: athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0), 0),
+    }));
+    // Relais : meilleur temps → 12 pts, pire → 1 pt
+    const byRelay=[...rows].sort((a,b)=>a.relay-b.relay);
+    byRelay.forEach((r,ri)=>{ rows.find(x=>x.idx===r.idx).relayPts = r.relay===Infinity?0:(12-ri); });
+    // Longueur : meilleur total → 12 pts, pire → 1 pt
+    const byJump=[...rows].sort((a,b)=>b.totalJump-a.totalJump);
+    byJump.forEach((r,ri)=>{ rows.find(x=>x.idx===r.idx).jumpPts = r.totalJump===0?0:(12-ri); });
+    // Score /10
+    rows.forEach(r=>{
+      const raw = (r.relayPts||0)+(r.jumpPts||0); // max 24
+      athPtsMap[r.idx] = raw===0 ? 0 : Math.round(raw/24*10*10)/10;
     });
-
-    // Relais : meilleur temps = 6 pts, pire = 1 pt (sur 6 équipes)
-    const byRelay = [...rows].sort((a,b)=>a.relay-b.relay);
-    byRelay.forEach((r,ri)=>{
-      const s = rows.find(x=>x.idx===r.idx);
-      s.relayPts = r.relay===Infinity ? 0 : (6-ri); // 6,5,4,3,2,1
-    });
-
-    // Longueur : meilleure somme = 4 pts, pire = 1 pt (sur 6 équipes)
-    const byJump = [...rows].sort((a,b)=>b.totalJump-a.totalJump);
-    byJump.forEach((r,ri)=>{
-      const s = rows.find(x=>x.idx===r.idx);
-      s.jumpPts = r.totalJump===0 ? 0 : (4-Math.min(ri,3)); // 4,3,2,1
-    });
-
-    // Total athlé sur 10
-    rows.forEach(r=>{ athPtsMap[r.idx] = (r.relayPts||0) + (r.jumpPts||0); });
-    // Max possible = 6+4 = 10 ✓
-  });
+  }
 
   // ── ÉCOLO : gestes/15 × 10 ──
   const all = Array.from({length:12}, (_,i)=>{
@@ -880,8 +976,8 @@ function showView(v){
   const el=document.getElementById('view-'+v);if(el)el.classList.add('active');
   const idx=VIEW_MAP[v];if(idx!==undefined)document.querySelectorAll('nav button')[idx].classList.add('active');
   if(v==='planning')recalc();
-  if(v==='classement')renderClassement();
-  if(v==='athle')buildAthleGrid();
+  if(v==='classement'){renderClassement();renderMatchHistory();}
+  if(v==='athle'){buildAthleGrid();renderAthleClassement();}
   if(v==='ecolo')buildEcoTable();
   if(v==='final')calcFinal();
   if(v==='equipes')buildEquipesPage();
@@ -1082,7 +1178,8 @@ function initFirebase(){
   window._fbOn('eleves',   v=>{ eleves=v;    localStorage.setItem('rcy_eleves',  JSON.stringify(v)); });
   window._fbOn('standings',v=>{ standings=v; localStorage.setItem('rcy_standings',JSON.stringify(v)); renderClassement(); });
   window._fbOn('eco',      v=>{ ecoChecks=v; localStorage.setItem('rcy_eco',     JSON.stringify(v)); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
-  window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); });
+  window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); renderAthleClassement(); });
+  window._fbOn('history',  v=>{ matchHistory=v; localStorage.setItem('rcy_history',JSON.stringify(v)); renderMatchHistory(); });
   window._fbOn('rules',    v=>{ rulesData=v; localStorage.setItem('rcy_rules',   JSON.stringify(v)); renderRulesView(); });
   window._fbOn('gestes',   v=>{ gestesData=v; GESTES.length=0; v.forEach(g=>GESTES.push(g)); localStorage.setItem('rcy_gestes',JSON.stringify(v)); buildSplash(); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
   setSyncDot('ok');
