@@ -471,11 +471,11 @@ nav button:active{cursor:grabbing;}
     <div class="sec-title">Classement athlétisme — 12 équipes</div>
     <div class="info-bar" style="margin-bottom:.8rem;">
       Classement général toutes équipes confondues. Relais : meilleur temps = 12 pts → pire = 1 pt.
-      Longueur : meilleure distance = 12 pts → pire = 1 pt. Total max = 24 pts → normalisé sur <strong>10 pts</strong>.
+      Longueur : <strong>moyenne par athlète</strong> (équipe 5 ou 6 athlètes = même traitement). Meilleure moyenne = 12 pts → pire = 1 pt. Total max = 24 pts → normalisé sur <strong>10 pts</strong>.
     </div>
     <button class="btn-main" style="margin-bottom:.8rem;font-size:.82rem;padding:.35rem .9rem;" onclick="calcAthle();renderAthleClassement()">🔄 Actualiser le classement</button>
     <div class="class-wrap"><table class="ctbl">
-      <thead><tr><th>#</th><th>Équipe</th><th>Relais (s)</th><th>Cl. Relais</th><th>Longueur (cm)</th><th>Cl. Longueur</th><th>Pts bruts /24</th><th>Pts athlé /10</th></tr></thead>
+      <thead><tr><th>#</th><th>Équipe</th><th>Relais (s)</th><th>Cl. Relais</th><th>Moy. longueur</th><th>Cl. Longueur</th><th>Pts bruts /24</th><th>Pts athlé /10</th></tr></thead>
       <tbody id="ath-ctbl"></tbody>
     </table></div>
   </div>
@@ -936,7 +936,9 @@ function renderAthleClassement(){
   rows.forEach((r,rank)=>{
     const rc = rank===0?'gold':rank===1?'silver':rank===2?'bronze':'';
     const relStr = r.relay===Infinity ? '—' : r.relay.toFixed(2)+' s';
-    const jStr   = r.totalJump>0 ? r.totalJump.toFixed(0)+' cm' : '—';
+    const jStr   = r.avgJump>0
+      ? r.avgJump.toFixed(1)+' cm/ath <span style="color:var(--text3);font-size:.75rem;">('+r.totalJump.toFixed(0)+' cm · '+r.nbJumpers+' ath.)</span>'
+      : '—';
     const bar = v => `<div style="display:flex;align-items:center;gap:.3rem;">
       <div style="flex:1;background:var(--gll);border-radius:3px;height:6px;min-width:40px;">
         <div style="width:${Math.round(v/10*100)}%;background:var(--g);height:6px;border-radius:3px;"></div>
@@ -1010,17 +1012,18 @@ function calcFinal(){
   // ── ATHLÉ : classement unifié 12 équipes, normalisé sur 10 ──
   const athPtsMap = {};
   {
-    const rows = Array.from({length:12}, (_,i)=>({
-      idx: i,
-      relay:     parseFloat(athleData[i].relay)||Infinity,
-      totalJump: athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0), 0),
-    }));
+    const rows = Array.from({length:12}, (_,i)=>{
+      const jumps = athleData[i].jumps.filter(j=>parseFloat(j.dist)>0);
+      const totalJump = jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0), 0);
+      const avgJump = totalJump / (jumps.length||1); // MOYENNE par athlète
+      return {idx:i, relay:parseFloat(athleData[i].relay)||Infinity, avgJump};
+    });
     // Relais : meilleur temps → 12 pts, pire → 1 pt
     const byRelay=[...rows].sort((a,b)=>a.relay-b.relay);
     byRelay.forEach((r,ri)=>{ rows.find(x=>x.idx===r.idx).relayPts = r.relay===Infinity?0:(12-ri); });
-    // Longueur : meilleur total → 12 pts, pire → 1 pt
-    const byJump=[...rows].sort((a,b)=>b.totalJump-a.totalJump);
-    byJump.forEach((r,ri)=>{ rows.find(x=>x.idx===r.idx).jumpPts = r.totalJump===0?0:(12-ri); });
+    // Longueur : meilleure MOYENNE par athlète → 12 pts (équitable quelle que soit la taille de l'équipe)
+    const byJump=[...rows].sort((a,b)=>b.avgJump-a.avgJump);
+    byJump.forEach((r,ri)=>{ rows.find(x=>x.idx===r.idx).jumpPts = r.avgJump===0?0:(12-ri); });
     // Score /10
     rows.forEach(r=>{
       const raw = (r.relayPts||0)+(r.jumpPts||0); // max 24
