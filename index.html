@@ -1006,7 +1006,7 @@ function applyConfig(){
 
 // ══ RESET FUNCTIONS ══
 function resetBasket(){
-  if(!confirm('Remettre le basket à zéro ? (scores, classements, historique)\nCette action est irréversible.')) return;
+  if(!confirm("Remettre le basket a zero ? (scores, classements, historique)\nCette action est irreversible.")) return;
   standings = [
     GROUP_A.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
     GROUP_B.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}))
@@ -1016,30 +1016,30 @@ function resetBasket(){
   save();
   renderClassement();
   renderMatchHistory();
-  alert('✓ Basket remis à zéro !');
+  alert("Basket remis a zero !");
 }
 
 function resetAthle(){
-  if(!confirm('Remettre l'athlétisme à zéro ? (temps relais + sauts)\nCette action est irréversible.')) return;
+  if(!confirm("Remettre l'athletisme a zero ? (temps relais + sauts)\nCette action est irreversible.")) return;
   athleData = Array.from({length:12}, (_,i)=>({
     relay: '',
     jumps: elevesByTeam(i).map(e=>({id:e.id, prenom:e.prenom, dist:''}))
   }));
   save();
   renderAthleClassement();
-  alert('✓ Athlétisme remis à zéro !');
+  alert("Athletisme remis a zero !");
 }
 
 function resetEcolo(){
-  if(!confirm('Remettre les points écolo à zéro ?\nTous les gestes cochés seront effacés.')) return;
+  if(!confirm("Remettre les points ecolo a zero ?\nTous les gestes coches seront effaces.")) return;
   ecoChecks = Array.from({length:12}, ()=>({}));
   save();
   const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable();
-  alert('✓ Écolo remis à zéro !');
+  alert("Ecolo remis a zero !");
 }
 
 function resetAll(){
-  if(!confirm('⚠️ RESET COMPLET : basket + athlé + écolo ?\nLes équipes et noms sont conservés.\nCette action est irréversible.')) return;
+  if(!confirm("RESET COMPLET : basket + athle + ecolo ?\nLes equipes et noms sont conserves.\nCette action est irreversible.")) return;
   standings = [
     GROUP_A.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0})),
     GROUP_B.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}))
@@ -1056,7 +1056,7 @@ function resetAll(){
   renderMatchHistory();
   renderAthleClassement();
   const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable();
-  alert('✓ Tout remis à zéro ! Bonne deuxième session !');
+  alert("Tout remis a zero ! Bonne deuxieme session !");
 }
 
 // ══ NAV ══
