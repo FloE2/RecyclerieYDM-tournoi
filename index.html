@@ -903,30 +903,37 @@ function calcAthle(){for(let i=0;i<12;i++)saveAthle(i);}
 // Classement athlé unifié sur 12 équipes
 function renderAthleClassement(){
   // Collect all 12 teams
-  const rows = Array.from({length:12}, (_,i)=>({
-    idx: i,
-    relay:     parseFloat(athleData[i].relay)||Infinity,
-    totalJump: athleData[i].jumps.reduce((s,j)=>s+(parseFloat(j.dist)||0), 0),
-  }));
+  const rows = Array.from({length:12}, (_,i)=>{
+    const allJumps = athleData[i].jumps || [];
+    const validJumps = allJumps.filter(j=>parseFloat(j.dist)>0);
+    const totalJump  = validJumps.reduce((s,j)=>s+(parseFloat(j.dist)||0), 0);
+    const nbJumpers  = validJumps.length || 0;
+    const avgJump    = nbJumpers>0 ? totalJump/nbJumpers : 0; // moyenne par athlète
+    return {
+      idx: i,
+      relay:     parseFloat(athleData[i].relay)||Infinity,
+      totalJump, nbJumpers, avgJump,
+    };
+  });
 
-  // Relay rank : best (lowest) time = rank 1 → 12 pts, worst = rank 12 → 1 pt
+  // Relay rank : meilleur temps = 12 pts → pire = 1 pt
   const byRelay = [...rows].sort((a,b)=>a.relay-b.relay);
   byRelay.forEach((r,ri)=>{
     rows.find(x=>x.idx===r.idx).relayRank = ri+1;
-    rows.find(x=>x.idx===r.idx).relayPts  = r.relay===Infinity ? 0 : (12-ri); // 12→11→…→1
+    rows.find(x=>x.idx===r.idx).relayPts  = r.relay===Infinity ? 0 : (12-ri);
   });
 
-  // Jump rank : best (highest) total = rank 1 → 12 pts, worst = rank 12 → 1 pt
-  const byJump = [...rows].sort((a,b)=>b.totalJump-a.totalJump);
+  // Jump rank : meilleure MOYENNE par athlète = 12 pts (équitable 5 ou 6 athlètes)
+  const byJump = [...rows].sort((a,b)=>b.avgJump-a.avgJump);
   byJump.forEach((r,ri)=>{
     rows.find(x=>x.idx===r.idx).jumpRank = ri+1;
-    rows.find(x=>x.idx===r.idx).jumpPts  = r.totalJump===0 ? 0 : (12-ri); // 12→11→…→1
+    rows.find(x=>x.idx===r.idx).jumpPts  = r.avgJump===0 ? 0 : (12-ri);
   });
 
-  // Total brut /24, normalized /10
+  // Total brut /24, normalisé /10
   rows.forEach(r=>{
-    r.rawPts = (r.relayPts||0) + (r.jumpPts||0); // max 24
-    r.athScore = r.rawPts===0 ? 0 : Math.round(r.rawPts / 24 * 10 * 10) / 10; // /10
+    r.rawPts   = (r.relayPts||0) + (r.jumpPts||0); // max 24
+    r.athScore = r.rawPts===0 ? 0 : Math.round(r.rawPts/24*10*10)/10;
   });
   rows.sort((a,b)=>b.rawPts-a.rawPts);
 
