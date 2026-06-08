@@ -1805,7 +1805,16 @@ function initFirebase(){
   if(!window._fbOn) return;
   setSyncDot('load');
   window._fbOn('teams',    v=>{ teams=v;     localStorage.setItem('rcy_teams',   JSON.stringify(v)); loadRound(currentRound); });
-  window._fbOn('eleves',   v=>{ eleves=v;    localStorage.setItem('rcy_eleves',  JSON.stringify(v)); });
+  window._fbOn('eleves', v=>{
+    if(_needsElevesReset){
+      // Nouvelles équipes prioritaires — écraser Firebase
+      if(window._fbSet) window._fbSet('eleves', eleves);
+      _needsElevesReset = false;
+    } else if(!_fbWriting && v){
+      eleves = v;
+      localStorage.setItem('rcy_eleves', JSON.stringify(v));
+    }
+  });
   window._fbOn('standings', v=>{
     if(_fbWriting) return;
     // Firebase peut retourner {0:[...], 1:[...]} au lieu de [[...],[...]]
