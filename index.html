@@ -290,9 +290,37 @@ nav button:active{cursor:grabbing;}
   color:rgba(160,230,160,.85);line-height:1.1;
 }
 .court-arb-name.many{font-size:1.2rem;}
+
+/* ── LOADING OVERLAY (attend Firebase avant d'afficher le match) ── */
+#fb-loading{
+  position:fixed;inset:0;z-index:5000;
+  background:linear-gradient(160deg,#1e5c2a 0%,#2e8a3e 60%,#1a4820 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;
+  transition:opacity .4s;
+}
+#fb-loading.hide{opacity:0;pointer-events:none;}
+.fb-spinner{
+  width:48px;height:48px;border-radius:50%;
+  border:4px solid rgba(160,232,100,.2);
+  border-top-color:#a0e864;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.fb-loading-txt{
+  font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:rgba(200,240,160,.8);
+}
+.fb-loading-sub{font-size:.82rem;color:rgba(200,240,160,.5);}
 </style>
 </head>
 <body>
+
+<!-- ══════════ FIREBASE LOADING ══════════ -->
+<div id="fb-loading">
+  <div class="fb-spinner"></div>
+  <div class="fb-loading-txt">♻ Tournoi Recyclerie</div>
+  <div class="fb-loading-sub" id="fb-loading-sub">Connexion à Firebase…</div>
+</div>
 
 <!-- ══════════ SPLASH / ÉCRAN D'ACCUEIL ══════════ -->
 <div id="splash">
@@ -1692,10 +1720,18 @@ function initFirebase(){
   window._fbOn('eco',      v=>{ ecoChecks=v; localStorage.setItem('rcy_eco',     JSON.stringify(v)); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
   window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); renderAthleClassement(); });
   window._fbOn('scored', v=>{
-    if(!v||_fbWriting) return;
-    _matchScored = v;
-    localStorage.setItem('rcy_scored', JSON.stringify(v));
-    loadRound(currentRound); // restaurer l'état des matchs joués
+    if(_fbWriting) return;
+    // Normaliser : Firebase peut envoyer null (aucun match joué) ou un objet
+    _matchScored = (v && typeof v==='object') ? v : {};
+    localStorage.setItem('rcy_scored', JSON.stringify(_matchScored));
+    if(!_appReady){
+      // Premier chargement : initialiser l'app avec les vraies données
+      initApp();
+      hideLoading();
+    } else {
+      // Mise à jour en temps réel (ex: Emeric marque un match depuis son tel)
+      loadRound(currentRound);
+    }
   });
   window._fbOn('history',  v=>{
     if(_fbWriting) return; // ignorer echo
@@ -1713,23 +1749,30 @@ function initFirebase(){
   });
   window._fbOn('rules',    v=>{ rulesData=v; localStorage.setItem('rcy_rules',   JSON.stringify(v)); renderRulesView(); });
   window._fbOn('gestes',   v=>{ gestesData=v; GESTES.length=0; v.forEach(g=>GESTES.push(g)); localStorage.setItem('rcy_gestes',JSON.stringify(v)); buildSplash(); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
-  setSyncDot('ok');
+  // setSyncDot('ok') sera appelé par hideLoading
 }
 window.addEventListener('fb-ready', ()=>{ setTimeout(initFirebase, 300); });
 
-function init(){
-  // Normalise standings depuis cache localStorage — sans écraser les données réelles
+let _appReady = false;
+
+function hideLoading(){
+  if(_appReady) return;
+  _appReady = true;
+  const el = document.getElementById('fb-loading');
+  if(el){ el.classList.add('hide'); setTimeout(()=>el.style.display='none', 450); }
+  setSyncDot('ok');
+}
+
+function initApp(){
+  // Normalise standings depuis cache
   [0,1].forEach(g=>{
     const grpIdx = g===0 ? GROUP_A : GROUP_B;
-    // Seulement si le groupe est vide ou mal formé
     if(!standings[g] || !Array.isArray(standings[g]) || standings[g].length===0){
       standings[g] = grpIdx.map(i=>({idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0}));
     } else {
-      // Compléter les équipes manquantes sans écraser les existantes
-      standings[g] = grpIdx.map(i=>(standings[g]||[]).find(s=>s&&s.idx===i) || {idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});
+      standings[g] = grpIdx.map(i=>(standings[g]||[]).find(s=>s&&s.idx===i)||{idx:i,played:0,wins:0,losses:0,pf:0,pa:0,pts:0});
     }
   });
-  // Charge gestes & règles depuis cache localStorage (Firebase met à jour via listeners)
   const sg=localStorage.getItem('rcy_gestes');
   if(sg){try{const g=JSON.parse(sg);GESTES.length=0;g.forEach(x=>GESTES.push(x));gestesData=GESTES.map(g=>({...g}));}catch(e){}}
   const sr=localStorage.getItem('rcy_rules');
@@ -1738,7 +1781,29 @@ function init(){
   loadRound(0);
   updateChronoDisplay();
   renderRulesView();
-  // Firebase prend le relais dès connexion — toutes les données sont synchronisées automatiquement
+}
+
+function init(){
+  const sub = document.getElementById('fb-loading-sub');
+
+  // Si Firebase est déjà prêt (module chargé très vite), on attend quand même
+  // la réponse de onValue('scored') pour charger le bon état des matchs
+  if(window._fbReady){
+    if(sub) sub.textContent = 'Chargement des données…';
+    // Firebase va déclencher les listeners — on attend 'scored' spécifiquement
+    // Timeout de sécurité : si Firebase ne répond pas en 3s, on charge quand même
+    setTimeout(()=>{
+      if(!_appReady){
+        if(sub) sub.textContent = 'Chargement depuis le cache…';
+        initApp();
+        hideLoading();
+      }
+    }, 3000);
+  } else {
+    // Firebase non disponible (offline) — charger depuis localStorage immédiatement
+    if(sub) sub.textContent = 'Mode hors ligne — chargement du cache…';
+    setTimeout(()=>{ initApp(); hideLoading(); }, 800);
+  }
 }
 init();
 // ══ NAV DRAG & DROP ══
