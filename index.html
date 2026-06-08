@@ -728,7 +728,19 @@ const GESTES=[
 
 // Données — localStorage comme cache, Firebase comme source de vérité
 let teams      = JSON.parse(localStorage.getItem('rcy_teams')   ||'null') || DEF_TEAMS.map(t=>({...t}));
-let eleves     = JSON.parse(localStorage.getItem('rcy_eleves')  ||'null') || DEFAULT_ELEVES.map(e=>({...e}));
+// ── Versioning des équipes : v4 force l'écrasement de Firebase ──
+const DATA_VERSION = 'v4-2026-06-08';
+const _storedVer = localStorage.getItem('rcy_data_version');
+let _needsElevesReset = false;
+let eleves;
+if(_storedVer !== DATA_VERSION){
+  eleves = DEFAULT_ELEVES.map(e=>({...e}));
+  localStorage.setItem('rcy_data_version', DATA_VERSION);
+  localStorage.setItem('rcy_eleves', JSON.stringify(eleves));
+  _needsElevesReset = true; // écraser Firebase dès connexion
+} else {
+  eleves = JSON.parse(localStorage.getItem('rcy_eleves')||'null') || DEFAULT_ELEVES.map(e=>({...e}));
+}
 let ecoChecks  = JSON.parse(localStorage.getItem('rcy_eco')     ||'null') || Array.from({length:12},()=>({}));
 let athleData  = JSON.parse(localStorage.getItem('rcy_athle')   ||'null') || Array.from({length:12},()=>({relay:'',jumps:[]}));
 let standings  = JSON.parse(localStorage.getItem('rcy_standings')||'null') || [
