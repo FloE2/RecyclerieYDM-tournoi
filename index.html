@@ -311,6 +311,24 @@ nav button:active{cursor:grabbing;}
   letter-spacing:.08em;text-transform:uppercase;color:rgba(200,240,160,.8);
 }
 .fb-loading-sub{font-size:.82rem;color:rgba(200,240,160,.5);}
+
+/* ── ABSENCES ── */
+.eleve-row{position:relative;}
+.absent-btn{
+  width:28px;height:28px;border-radius:4px;border:1px solid var(--border2);
+  background:#fff;color:var(--text3);font-size:.8rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .15s;
+}
+.absent-btn:hover{border-color:var(--rd);color:var(--rd);background:#fff5f5;}
+.absent-btn.is-absent{background:#fff5f5;border-color:var(--rd);color:var(--rd);}
+.eleve-inp.is-absent,.eleve-sel.is-absent{opacity:.4;text-decoration:line-through;}
+.absent-badge{
+  font-family:'Barlow Condensed',sans-serif;font-size:.6rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--rd);
+  background:#fff5f5;border:1px solid #f5c0c0;border-radius:3px;
+  padding:1px 4px;flex-shrink:0;
+}
 </style>
 </head>
 <body>
@@ -566,7 +584,7 @@ nav button:active{cursor:grabbing;}
       <div style="font-size:.87rem;color:var(--text2);line-height:1.5;">Donnez un <strong>nom en lien avec l'écologie</strong> (ex : <em>Les Pandas Verts</em>, <em>Team Compost</em>, <em>Les Recycleurs Fous</em>…). Le nom le plus créatif peut rapporter des <strong style="color:var(--gd);">points bonus</strong> !</div>
     </div>
   </div>
-  <div class="info-bar">Modifie les <strong>prénoms</strong> et le <strong>nom d'équipe</strong>. Menu déroulant pour <strong>transférer un élève</strong>. Clique sur <strong>Enregistrer</strong>.</div>
+  <div class="info-bar">Modifie les <strong>prénoms</strong> et le <strong>nom d'équipe</strong>. Menu déroulant pour <strong>transférer un élève</strong>. Clique sur <strong>✕</strong> pour marquer un élève <strong>absent</strong> (exclu du calcul athlé). Clique sur <strong>Enregistrer</strong>.</div>
   <button class="btn-main" style="margin-bottom:1rem;" onclick="saveAllEleves()">💾 Enregistrer tous les changements</button>
   <div class="eq-grid" id="eq-grid"></div>
 </div>
@@ -678,6 +696,8 @@ let standings  = JSON.parse(localStorage.getItem('rcy_standings')||'null') || [
 ];
 let matchHistory = JSON.parse(localStorage.getItem('rcy_history')||'null') || [[],[]];
 
+let absences = JSON.parse(localStorage.getItem('rcy_absences')||'{}');
+
 let _fbWriting = false; // flag pour éviter que onValue re-déclenche sur nos propres écritures
 
 function save(){
@@ -685,6 +705,7 @@ function save(){
   localStorage.setItem('rcy_teams',    JSON.stringify(teams));
   localStorage.setItem('rcy_eleves',   JSON.stringify(eleves));
   localStorage.setItem('rcy_eco',      JSON.stringify(ecoChecks));
+  localStorage.setItem('rcy_absences', JSON.stringify(absences));
   localStorage.setItem('rcy_athle',    JSON.stringify(athleData));
   localStorage.setItem('rcy_standings',JSON.stringify(standings));
   // Firebase — source de vérité unique
@@ -694,6 +715,7 @@ function save(){
     window._fbSet('teams',    teams);
     window._fbSet('eleves',   eleves);
     window._fbSet('eco',      ecoChecks);
+    window._fbSet('absences', absences);
     window._fbSet('athle',    athleData);
     window._fbSet('standings',standings);
     window._fbSet('history',  matchHistory);
@@ -1114,7 +1136,14 @@ function buildAthleGrid(){
       <div class="ath-section">Relais 6×100m — temps (s)</div>
       <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;"><label style="font-size:.82rem;color:var(--text3);min-width:70px;">Temps (s)</label><input class="ath-relay-input" type="number" id="relay-${i}" value="${athleData[i].relay||''}" placeholder="ex: 87.5" step="0.1" min="0" style="width:90px;"></div>
       <div class="ath-section">Saut en longueur — meilleur saut (cm)</div>
-      ${members.map(e=>`<div class="ath-athlete-row"><div class="ath-athlete-name">${e.prenom} <span style="color:var(--text3);">${e.classe}</span></div><input type="number" id="jump-${i}-${e.id}" value="${(athleData[i].jumps.find(j=>j.id===e.id)||{dist:''}).dist}" placeholder="cm" min="0" max="700"></div>`).join('')}
+      ${members.map(e=>{
+        const abs=absences[e.id];
+        const jumpVal=(athleData[i].jumps.find(j=>j.id===e.id)||{dist:''}).dist;
+        return `<div class="ath-athlete-row" style="${abs?'opacity:.4;':''}">
+          <div class="ath-athlete-name">${e.prenom} <span style="color:var(--text3);">${e.classe}</span>${abs?' <span class="absent-badge">Absent</span>':''}</div>
+          <input type="number" id="jump-${i}-${e.id}" value="${jumpVal}" placeholder="${abs?'Absent':'cm'}" min="0" max="700" ${abs?'disabled':''} style="${abs?'opacity:.4;':''}">
+        </div>`;
+      }).join('')}
       <button class="ath-save-btn" onclick="saveAthle(${i})">💾 Enregistrer</button>`;
     grid.appendChild(card);
   }
@@ -1122,7 +1151,7 @@ function buildAthleGrid(){
 function saveAthle(i){
   athleData[i].relay=document.getElementById('relay-'+i).value;
   const members=elevesByTeam(i);
-  athleData[i].jumps=members.map(e=>({id:e.id,prenom:e.prenom,dist:(document.getElementById('jump-'+i+'-'+e.id)||{value:''}).value||''}));
+  athleData[i].jumps=members.filter(e=>!absences[e.id]).map(e=>({id:e.id,prenom:e.prenom,dist:(document.getElementById('jump-'+i+'-'+e.id)||{value:''}).value||''}));
   save();
 }
 function calcAthle(){for(let i=0;i<12;i++)saveAthle(i);}
@@ -1131,10 +1160,10 @@ function renderAthleClassement(){
   // Collect all 12 teams
   const rows = Array.from({length:12}, (_,i)=>{
     const allJumps = athleData[i].jumps || [];
-    const validJumps = allJumps.filter(j=>parseFloat(j.dist)>0);
+    const validJumps = allJumps.filter(j=>parseFloat(j.dist)>0 && !absences[j.id]);
     const totalJump  = validJumps.reduce((s,j)=>s+(parseFloat(j.dist)||0), 0);
     const nbJumpers  = validJumps.length || 0;
-    const avgJump    = nbJumpers>0 ? totalJump/nbJumpers : 0; // moyenne par athlète
+    const avgJump    = nbJumpers>0 ? totalJump/nbJumpers : 0; // moyenne par athlète (absents exclus)
     return {
       idx: i,
       relay:     parseFloat(athleData[i].relay)||Infinity,
@@ -1303,7 +1332,19 @@ function buildEquipesPage(){
       </div>
       <div style="border-top:1px solid var(--gll);padding-top:.5rem;">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.3rem;">Élèves</div>
-        ${members.map(e=>`<div class="eleve-row"><input class="eleve-inp" type="text" id="ep-${e.id}" value="${e.prenom}" placeholder="Prénom"><select class="eleve-sel" id="es-${e.id}">${teams.map((t,i)=>`<option value="${i}"${e.eq===i?' selected':''}>${t.name}</option>`).join('')}</select><span class="eleve-cls">${e.classe}</span></div>`).join('')}
+        ${members.map(e=>{
+          const abs=absences[e.id];
+          return `<div class="eleve-row">
+            <input class="eleve-inp ${abs?'is-absent':''}" type="text" id="ep-${e.id}" value="${e.prenom}" placeholder="Prénom" ${abs?'disabled':''}>
+            <select class="eleve-sel ${abs?'is-absent':''}" id="es-${e.id}" ${abs?'disabled':''}>
+              ${teams.map((t,i)=>`<option value="${i}"${e.eq===i?' selected':''}>${t.name}</option>`).join('')}
+            </select>
+            <span class="eleve-cls">${e.classe}</span>
+            <button class="absent-btn ${abs?'is-absent':''}" title="${abs?'Marquer présent':'Marquer absent'}"
+              onclick="toggleAbsent(${e.id},this)">${abs?'✕':'–'}</button>
+            ${abs?'<span class="absent-badge">Absent</span>':''}
+          </div>`;
+        }).join('')}
       </div>`;
     grid.appendChild(card);
   }
@@ -1352,11 +1393,14 @@ function resetBasket(){
 }
 
 function resetAthle(){
-  if(!confirm("Remettre l'athletisme a zero ? (temps relais + sauts)\nCette action est irreversible.")) return;
+  if(!confirm("Remettre l'athletisme a zero ? (temps relais + sauts + absences)\nCette action est irreversible.")) return;
   athleData = Array.from({length:12}, (_,i)=>({
     relay: '',
     jumps: elevesByTeam(i).map(e=>({id:e.id, prenom:e.prenom, dist:''}))
   }));
+  absences={};
+  localStorage.setItem('rcy_absences','{}');
+  if(window._fbSet) window._fbSet('absences',{});
   save();
   renderAthleClassement();
   alert("Athletisme remis a zero !");
@@ -1491,6 +1535,27 @@ function deleteMatch(grp, idx){
   renderClassement();
   renderMatchHistory();
   renderMatchEdit();
+}
+
+// ══ ABSENCES ══
+function toggleAbsent(eleveId, btn){
+  absences[eleveId] = !absences[eleveId];
+  localStorage.setItem('rcy_absences', JSON.stringify(absences));
+  if(window._fbSet) window._fbSet('absences', absences);
+  // Rebuildre la page équipe pour refléter le changement
+  buildEquipesPage();
+  // Mettre à jour les données athlé (recalculer les sauts sans l'absent)
+  for(let i=0;i<12;i++){
+    const members = elevesByTeam(i);
+    athleData[i].jumps = athleData[i].jumps.filter(j=>!absences[j.id]);
+    // Rajouter les présents manquants
+    members.forEach(e=>{
+      if(!absences[e.id] && !athleData[i].jumps.find(j=>j.id===e.id)){
+        athleData[i].jumps.push({id:e.id, prenom:e.prenom, dist:''});
+      }
+    });
+  }
+  save();
 }
 
 // ══ NAV ══
@@ -1723,6 +1788,7 @@ function initFirebase(){
     renderClassement();
   });
   window._fbOn('eco',      v=>{ ecoChecks=v; localStorage.setItem('rcy_eco',     JSON.stringify(v)); const t=document.getElementById('eco-tbl');if(t&&t.innerHTML)buildEcoTable(); });
+  window._fbOn('absences', v=>{ if(v&&!_fbWriting){absences=v;localStorage.setItem('rcy_absences',JSON.stringify(v));} });
   window._fbOn('athle',    v=>{ athleData=v; localStorage.setItem('rcy_athle',   JSON.stringify(v)); renderAthleClassement(); });
   window._fbOn('scored', v=>{
     if(_fbWriting) return;
