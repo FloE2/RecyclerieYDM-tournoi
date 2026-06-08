@@ -362,11 +362,11 @@ nav button:active{cursor:grabbing;}
     <span id="sync-dot" title="Synchronisation Firebase" style="width:8px;height:8px;border-radius:50%;background:#f0c060;display:inline-block;margin-left:.2rem;flex-shrink:0;"></span>
   </div>
   <button onclick="showSplash()" id="btn-accueil">🏠 Accueil</button>
-  <button onclick="showView('planning')">📋 Planning</button>
   <button onclick="showView('ecolo')">🌿 Écolo</button>
-  <button onclick="showView('classement')">🏆 Classement basket</button>
-  <button onclick="showView('match')">🏀 Match</button>
   <button onclick="showView('athle')">🏃 Athlé</button>
+  <button onclick="showView('planning')">📋 Planning</button>
+  <button onclick="showView('match')">🏀 Match</button>
+  <button onclick="showView('classement')">🏆 Classement basket</button>
   <button onclick="showView('final')">🥇 Final</button>
   <button onclick="showView('regles-basket')">📖 Règles basket</button>
   <button onclick="showView('equipes')">👥 Équipes</button>
@@ -1021,7 +1021,12 @@ function toggleFS(){if(!document.fullscreenElement)document.documentElement.requ
 function addMin(t,m){const[h,mn]=t.split(':').map(Number);const tot=h*60+mn+m;return p2(Math.floor(tot/60)%24)+':'+p2(tot%60);}
 function recalc(){
   const st=document.getElementById('stime').value||'09:00';const md=parseInt(document.getElementById('mdur').value)||10;const bd=parseInt(document.getElementById('bdur').value)||2;
-  const gi=parseInt(document.getElementById('group-sel').value);const sched=schedules[gi];matchDur=md*60;if(!chronoOn){chronoRem=matchDur;updateChronoDisplay();}
+  const gi=parseInt(document.getElementById('group-sel').value);const sched=schedules[gi];
+  matchDur=md*60;
+  if(!chronoOn){chronoRem=matchDur;updateChronoDisplay();}
+  // Synchroniser le champ durée dans l'onglet Match
+  const durInp=document.getElementById('dur-input');
+  if(durInp) durInp.value=md;
   const co=document.getElementById('planning-container');co.innerHTML='';let cur=st;
   sched.forEach((round,ri)=>{
     const end=addMin(cur,md);const block=document.createElement('div');block.className='round-block';
@@ -1489,7 +1494,7 @@ function deleteMatch(grp, idx){
 }
 
 // ══ NAV ══
-const VIEW_MAP={planning:1,ecolo:2,classement:3,match:4,athle:5,final:6,'regles-basket':7,equipes:8,config:9};
+const VIEW_MAP={ecolo:1,athle:2,planning:3,match:4,classement:5,final:6,'regles-basket':7,equipes:8,config:9};
 function showView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
