@@ -442,6 +442,15 @@ nav button:active{cursor:grabbing;}
         <button onclick="adjustDur(1)" style="font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:900;border:1px solid rgba(100,200,80,.3);background:rgba(30,80,30,.6);color:#c0e0a0;padding:.15rem .5rem;border-radius:4px;cursor:pointer;line-height:1;touch-action:manipulation;">+</button>
         <span style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;color:#80a060;">MIN</span>
       </div>
+      <button onclick="forceEndRound()"
+        style="font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:900;
+               letter-spacing:.05em;text-transform:uppercase;
+               border:2px solid #e07020;background:rgba(80,30,0,.7);
+               color:#f0a040;padding:.28rem .8rem;border-radius:4px;
+               cursor:pointer;touch-action:manipulation;"
+        title="Terminer les matchs en cours maintenant (buzzer gymnase)">
+        ⏹ Match terminé
+      </button>
       <button onclick="toggleFS()">⛶ Plein écran</button>
     </div>
   </div>
@@ -992,7 +1001,6 @@ function endByTime(){
   clearInterval(chronoIv);chronoOn=false;
   document.getElementById('btn-start').textContent='▶ Démarrer';
   document.getElementById('btn-start').className='btn-g';
-  // Seulement terminer les matchs pas encore joués
   if(!matchWon.c1 && !_matchScored[currentGroup+'-'+currentRound+'-c1']){
     const winIdx = scores.c1[0]>=scores.c1[1]?0:1;
     matchWon.c1=true;
@@ -1003,6 +1011,109 @@ function endByTime(){
     matchWon.c2=true;
     endMatch('c2', winIdx);
   }
+}
+
+// ── Buzzer gymnase : terminer immédiatement les matchs en cours ──
+function forceEndRound(){
+  const c1done = matchWon.c1 || !!_matchScored[currentGroup+'-'+currentRound+'-c1'];
+  const c2done = matchWon.c2 || !!_matchScored[currentGroup+'-'+currentRound+'-c2'];
+
+  if(c1done && c2done){
+    alert("Les deux matchs de ce round sont déjà terminés.");
+    return;
+  }
+
+  let msg = "⏹ Terminer maintenant les matchs en cours ?\n";
+  if(!c1done) msg += "\n• Terrain 1 : " + (scores.c1[0]>scores.c1[1]
+    ? document.getElementById('c1-n1').textContent + " gagne (" + scores.c1[0] + " - " + scores.c1[1] + ")"
+    : document.getElementById('c1-n2').textContent + " gagne (" + scores.c1[1] + " - " + scores.c1[0] + ")");
+  if(!c2done) msg += "\n• Terrain 2 : " + (scores.c2[0]>scores.c2[1]
+    ? document.getElementById('c2-n1').textContent + " gagne (" + scores.c2[0] + " - " + scores.c2[1] + ")"
+    : document.getElementById('c2-n2').textContent + " gagne (" + scores.c2[1] + " - " + scores.c2[0] + ")");
+  msg += "\n\nEn cas d'égalité, il n'y a pas de vainqueur (match nul).";
+
+  if(!confirm(msg)) return;
+
+  // Arrêter le chrono
+  clearInterval(chronoIv);
+  chronoOn=false;
+  chronoRem=0;
+  updateChronoDisplay();
+  document.getElementById('btn-start').textContent='▶ Démarrer';
+  document.getElementById('btn-start').className='btn-g';
+
+  // Terminer chaque match non encore joué
+  if(!c1done){
+    if(scores.c1[0]!==scores.c1[1]){ // il y a un vainqueur
+      const winIdx=scores.c1[0]>scores.c1[1]?0:1;
+      matchWon.c1=true;
+      endMatch('c1',winIdx);
+    } else {
+      // Égalité — on marque comme terminé sans vainqueur clair
+      matchWon.c1=true;
+      const mk=currentGroup+'-'+currentRound+'-c1';
+      _matchScored[mk]=true;
+      localStorage.setItem('rcy_scored',JSON.stringify(_matchScored));
+      if(window._fbSet) window._fbSet('scored',_matchScored);
+      const st=document.getElementById('c1-status');
+      if(st){st.className='mstatus fi';st.textContent='Terminé';}
+      ['s1','s2'].forEach(s=>{const el=document.getElementById('c1-'+s);if(el){el.style.opacity='.35';el.style.pointerEvents='none';}});
+      // Enregistrer match nul (chaque équipe +1 pt)
+      const round=schedules[currentGroup][currentRound];
+      if(round&&round.games[0]){
+        const[a,b]=round.games[0];
+        const ws=standings[currentGroup].find(s=>s.idx===a);
+        const ls=standings[currentGroup].find(s=>s.idx===b);
+        if(ws&&ls){
+          ws.played++;ws.pf+=scores.c1[0];ws.pa+=scores.c1[1];
+          ls.played++;ls.pf+=scores.c1[1];ls.pa+=scores.c1[0];
+        }
+        if(!Array.isArray(matchHistory[currentGroup])) matchHistory[currentGroup]=[];
+        matchHistory[currentGroup].push({
+          round:currentRound+1,court:1,
+          tA:a,tB:b,sA:scores.c1[0],sB:scores.c1[1],winner:null,nul:true
+        });
+      }
+      save();
+    }
+  }
+  if(!c2done){
+    if(scores.c2[0]!==scores.c2[1]){
+      const winIdx=scores.c2[0]>scores.c2[1]?0:1;
+      matchWon.c2=true;
+      endMatch('c2',winIdx);
+    } else {
+      matchWon.c2=true;
+      const mk=currentGroup+'-'+currentRound+'-c2';
+      _matchScored[mk]=true;
+      localStorage.setItem('rcy_scored',JSON.stringify(_matchScored));
+      if(window._fbSet) window._fbSet('scored',_matchScored);
+      const st=document.getElementById('c2-status');
+      if(st){st.className='mstatus fi';st.textContent='Terminé';}
+      ['s1','s2'].forEach(s=>{const el=document.getElementById('c2-'+s);if(el){el.style.opacity='.35';el.style.pointerEvents='none';}});
+      const round=schedules[currentGroup][currentRound];
+      if(round&&round.games[1]){
+        const[a,b]=round.games[1];
+        const ws=standings[currentGroup].find(s=>s.idx===a);
+        const ls=standings[currentGroup].find(s=>s.idx===b);
+        if(ws&&ls){
+          ws.played++;ws.pf+=scores.c2[0];ws.pa+=scores.c2[1];
+          ls.played++;ls.pf+=scores.c2[1];ls.pa+=scores.c2[0];
+        }
+        if(!Array.isArray(matchHistory[currentGroup])) matchHistory[currentGroup]=[];
+        matchHistory[currentGroup].push({
+          round:currentRound+1,court:2,
+          tA:a,tB:b,sA:scores.c2[0],sB:scores.c2[1],winner:null,nul:true
+        });
+      }
+      save();
+    }
+  }
+
+  // Rafraîchir le badge round
+  const done=isRoundComplete(currentRound);
+  const rbig=document.getElementById('round-big');
+  if(rbig){rbig.textContent=(done?'🔒 ':'')+'ROUND '+(currentRound+1)+' / '+schedules[currentGroup].length;rbig.style.color=done?'#f0c060':'#a0e848';}
 }
 function loadRound(r){
   currentRound = r;
@@ -1165,7 +1276,7 @@ function renderMatchHistory(){
       <td style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:${winner?'var(--g)':'var(--text3)'};">${m.sA}</td>
       <td style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:${!winner?'var(--g)':'var(--text3)'};">${m.sB}</td>
       <td class="tcell" style="color:${teams[m.tB].color};${!winner?'font-weight:900;':''}">${tLabel(m.tB)}</td>
-      <td><span style="font-family:'Barlow Condensed';font-size:.8rem;font-weight:700;color:${winner?'var(--g)':'var(--rd)'};">${winner?'✓ '+tLabel(m.tA):'✓ '+tLabel(m.tB)}</span></td>
+      <td><span style="font-family:'Barlow Condensed';font-size:.8rem;font-weight:700;color:${m.nul?'var(--am)':(m.winner===m.tA?'var(--g)':'var(--rd)')}">${m.nul?'= Nul':(m.winner===m.tA?'✓ '+tLabel(m.tA):'✓ '+tLabel(m.tB))}</span></td>
     </tr>`;
   }).join('');
 }
